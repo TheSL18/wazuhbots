@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "certificates": {
+    "WBOTS-478FF407836F": {
+      "cert_id": "WBOTS-478FF407836F",
+      "name": "jpayares",
+      "score": 1550,
+      "rank": 1,
+      "solved": 14,
+      "level": "Pup — Junior Analyst",
+      "date": "March 02, 2026",
+      "issued_at": "2026-03-02T19:19:06.569888+00:00",
+      "signed": true,
+      "gpg_signed": true,
+      "gpg_key_id": "E5616555DD4EDAAE",
+      "hmac_verified": true
+    }
+  },
+  "gpg_key_id": "E5616555DD4EDAAE",
+  "gpg_fingerprint": "8862AB060D18A07560CFD5E5E5616555DD4EDAAE"
+}

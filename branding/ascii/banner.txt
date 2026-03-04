@@ -1,0 +1,28 @@
+
+ ██╗    ██╗ █████╗ ███████╗██╗   ██╗██╗  ██╗██████╗  ██████╗ ████████╗███████╗
+ ██║    ██║██╔══██╗╚══███╔╝██║   ██║██║  ██║██╔══██╗██╔═══██╗╚══██╔══╝██╔════╝
+ ██║ █╗ ██║███████║  ███╔╝ ██║   ██║███████║██████╔╝██║   ██║   ██║   ███████╗
+ ██║███╗██║██╔══██║ ███╔╝  ██║   ██║██╔══██║██╔══██╗██║   ██║   ██║   ╚════██║
+ ╚███╔███╔╝██║  ██║███████╗╚██████╔╝██║  ██║██████╔╝╚██████╔╝   ██║   ███████║
+  ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═════╝  ╚═════╝    ╚═╝   ╚══════╝
+                        ╔═══════════════════════════╗
+                        ║     BOSS  OF  THE  SOC    ║
+                        ╚═══════════════════════════╝
+
+       /\      /\        Open-Source Cybersecurity CTF Platform
+      /  \    /  \       Powered by Wazuh SIEM
+     / /\ \  / /\ \
+    / /  \ \/ /  \ \     4 Scenarios | 150 Challenges | 95,700 Events
+   / /    \  /    \ \
+  / / .--. \/ .--. \ \   [S1] Dark Harvest    - Web Application Attack
+ / / ( oo )  ( oo ) \ \  [S2] Iron Gate       - Active Directory Compromise
+( (   '--'    '--'   ) ) [S3] Ghost Shell     - Linux Server Intrusion
+ \ \                / /  [S4] Supply Chain    - Advanced Persistent Threat
+  \ \  .__    __.  / /
+   \ \_|  \  /  |_/ /    Difficulty: Pup > Hunter > Alpha > Fenrir
+    \__|   \/   |__/
+       |   /\   |        github.com/youruser/WazuhBOTS
+       |  /  \  |        MIT License | 100% Open Source
+       | /    \ |
+        V      V
+

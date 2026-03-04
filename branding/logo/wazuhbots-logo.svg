@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" fill="none">
+  <defs>
+    <linearGradient id="wolfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="50%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.1"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glowStrong">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Shield / Hexagonal Background -->
+  <path d="M120,12 L208,42 L208,140 L120,210 L32,140 L32,42 Z"
+        fill="url(#shieldGrad)" stroke="url(#wolfGrad)" stroke-width="2.5" opacity="0.6"/>
+
+  <!-- Circuit lines emanating from shield -->
+  <g stroke="#3b82f6" stroke-width="1" opacity="0.3">
+    <line x1="208" y1="90" x2="235" y2="90"/>
+    <circle cx="235" cy="90" r="2" fill="#3b82f6"/>
+    <line x1="32" y1="110" x2="12" y2="110"/>
+    <circle cx="12" cy="110" r="2" fill="#3b82f6"/>
+    <line x1="175" y1="42" x2="190" y2="22"/>
+    <circle cx="190" cy="22" r="2" fill="#06b6d4"/>
+    <line x1="65" y1="42" x2="50" y2="22"/>
+    <circle cx="50" cy="22" r="2" fill="#06b6d4"/>
+  </g>
+
+  <!-- Wolf Head - Geometric/Polygonal Style -->
+  <g filter="url(#glow)">
+    <!-- Left ear -->
+    <polygon points="72,55 92,32 102,70" fill="url(#wolfGrad)" opacity="0.9"/>
+    <!-- Right ear -->
+    <polygon points="168,55 148,32 138,70" fill="url(#wolfGrad)" opacity="0.9"/>
+
+    <!-- Head top -->
+    <polygon points="92,50 120,38 148,50 145,75 120,65 95,75" fill="url(#wolfGrad)" opacity="0.85"/>
+
+    <!-- Face left -->
+    <polygon points="95,75 120,65 115,100 80,105 72,80" fill="url(#wolfGrad)" opacity="0.75"/>
+    <!-- Face right -->
+    <polygon points="145,75 120,65 125,100 160,105 168,80" fill="url(#wolfGrad)" opacity="0.75"/>
+
+    <!-- Snout left -->
+    <polygon points="80,105 115,100 108,135 88,130" fill="url(#wolfGrad)" opacity="0.65"/>
+    <!-- Snout right -->
+    <polygon points="160,105 125,100 132,135 152,130" fill="url(#wolfGrad)" opacity="0.65"/>
+
+    <!-- Lower jaw -->
+    <polygon points="88,130 108,135 120,155 132,135 152,130 120,170"
+            fill="url(#wolfGrad)" opacity="0.55"/>
+  </g>
+
+  <!-- Wolf eyes - glowing -->
+  <g filter="url(#glowStrong)">
+    <polygon points="88,82 105,78 103,92 86,94" fill="#06b6d4"/>
+    <polygon points="152,82 135,78 137,92 154,94" fill="#06b6d4"/>
+  </g>
+  <!-- Eye pupils -->
+  <circle cx="96" cy="86" r="3" fill="#0a0e17"/>
+  <circle cx="144" cy="86" r="3" fill="#0a0e17"/>
+  <!-- Eye glint -->
+  <circle cx="98" cy="84" r="1.2" fill="#ffffff" opacity="0.8"/>
+  <circle cx="146" cy="84" r="1.2" fill="#ffffff" opacity="0.8"/>
+
+  <!-- Nose -->
+  <polygon points="115,120 125,120 120,128" fill="#0a0e17" opacity="0.6"/>
+
+  <!-- Geometric wireframe overlay -->
+  <g stroke="#06b6d4" stroke-width="0.5" fill="none" opacity="0.25">
+    <line x1="120" y1="38" x2="120" y2="170"/>
+    <line x1="72" y1="80" x2="168" y2="80"/>
+    <line x1="80" y1="105" x2="160" y2="105"/>
+    <circle cx="120" cy="100" r="45" stroke-dasharray="4,6"/>
+  </g>
+
+  <!-- Main Text: WazuhBOTS -->
+  <text x="270" y="115" font-family="'Segoe UI','SF Pro Display',system-ui,sans-serif"
+        font-size="72" font-weight="800" letter-spacing="-1" fill="url(#textGrad)">
+    Wazuh<tspan fill="#e2e8f0" font-weight="900">BOTS</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="272" y="148" font-family="'Segoe UI',system-ui,sans-serif"
+        font-size="18" font-weight="600" letter-spacing="6" fill="#94a3b8"
+        text-transform="uppercase">
+    BOSS OF THE SOC
+  </text>
+
+  <!-- Accent line under tagline -->
+  <rect x="272" y="158" width="200" height="2" rx="1" fill="url(#wolfGrad)" opacity="0.5"/>
+
+  <!-- Decorative dots -->
+  <g fill="#3b82f6" opacity="0.4">
+    <circle cx="272" cy="178" r="2"/>
+    <circle cx="282" cy="178" r="2"/>
+    <circle cx="292" cy="178" r="2"/>
+    <circle cx="302" cy="178" r="1.5" fill="#06b6d4"/>
+  </g>
+
+  <!-- Version badge -->
+  <g transform="translate(580,130)">
+    <rect x="0" y="0" width="56" height="22" rx="11" fill="#3b82f6" opacity="0.15"
+          stroke="#3b82f6" stroke-width="1" stroke-opacity="0.3"/>
+    <text x="28" y="15" text-anchor="middle" font-family="'SF Mono','Cascadia Code',monospace"
+          font-size="11" font-weight="600" fill="#3b82f6">v1.0</text>
+  </g>
+</svg>

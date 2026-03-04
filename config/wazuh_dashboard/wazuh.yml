@@ -1,0 +1,7 @@
+hosts:
+  - default:
+      url: https://wazuh-manager
+      port: 55000
+      username: wazuh-wui
+      password: hZKyuqdC99cH75ekzc84@
+      run_as: false

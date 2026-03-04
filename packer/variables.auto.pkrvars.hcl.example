@@ -1,0 +1,13 @@
+## WazuhBOTS — Example variable overrides
+## Copy this file to variables.auto.pkrvars.hcl and adjust values.
+##
+##   cp variables.auto.pkrvars.hcl.example variables.auto.pkrvars.hcl
+
+# vmid          = 9000
+# template_name = "wazuhbots-lxc"
+# hostname      = "wazuhbots"
+# storage       = "local-lvm"
+# cores         = 8
+# memory        = 16384
+# disk_size     = "120G"
+# docker_subnet = "172.26.0.0/16"

@@ -1,0 +1,20 @@
+---
+# Internal users for Wazuh Indexer (OpenSearch Security plugin).
+# These are the demo hashes — actual passwords are overridden by environment
+# variables at container startup.
+
+_meta:
+  type: "internalusers"
+  config_version: 2
+
+admin:
+  hash: "$2y$12$K/SpTnVjL69g5qGhlab1auYmgSaA955OZ2mu026WEBRIBs9FnlWJi"
+  reserved: true
+  backend_roles:
+    - "admin"
+  description: "Admin user"
+
+kibanaserver:
+  hash: "$2y$12$4AcgAt3xwOWadA5s5blL6ev39OXDNhmOesEoo33eZtrq2N0YrU3H6"
+  reserved: true
+  description: "Kibana/Dashboard server user"

@@ -1,0 +1,15 @@
+# ==============================================================================
+# WazuhBOTS — SSL Certificate Generator
+# Generates TLS certificates for the Wazuh stack using the official tool.
+#
+# Usage:
+#   docker compose -f generate-indexer-certs.yml run --rm generator
+# ==============================================================================
+services:
+  generator:
+    image: wazuh/wazuh-certs-generator:0.0.2
+    hostname: wazuh-certs-generator
+    volumes:
+      - ./config/wazuh_indexer_ssl_certs:/certificates
+      - ./config/certs.yml:/config/certs.yml:ro
+    command: "-A"

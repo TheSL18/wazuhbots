@@ -1,0 +1,214 @@
+{
+  "scoreboard_configuration": {
+    "version": "1.0",
+    "platform": "CTFd",
+    "event_name": "WazuhBOTS - Boss of the SOC",
+    "description": "Scoring configuration for the WazuhBOTS CTF platform. Implements dynamic scoring with decay, first blood bonuses, and time-based incentives."
+  },
+  "scoring": {
+    "type": "dynamic",
+    "dynamic_scoring": {
+      "enabled": true,
+      "model": "logarithmic_decay",
+      "description": "Challenge point values decrease logarithmically as more teams solve them. This rewards early solvers and maintains competitive balance.",
+      "parameters": {
+        "initial_value": "Full point value assigned to the challenge (100/200/300/500 depending on level)",
+        "minimum_value_percentage": 50,
+        "minimum_value_description": "Challenges never drop below 50% of their original value regardless of solve count",
+        "decay_threshold": 20,
+        "decay_threshold_description": "Number of solves before the challenge reaches minimum value",
+        "decay_function": "logarithmic"
+      },
+      "per_level_config": {
+        "pup": {
+          "initial_value": 100,
+          "minimum_value": 50,
+          "decay_threshold": 30,
+          "decay_note": "Pup challenges decay slower since more teams are expected to solve them"
+        },
+        "hunter": {
+          "initial_value": 200,
+          "minimum_value": 100,
+          "decay_threshold": 20,
+          "decay_note": "Standard decay rate for intermediate challenges"
+        },
+        "alpha": {
+          "initial_value": 300,
+          "minimum_value": 150,
+          "decay_threshold": 15,
+          "decay_note": "Faster decay since fewer teams solve these"
+        },
+        "fenrir": {
+          "initial_value": 500,
+          "minimum_value": 250,
+          "decay_threshold": 10,
+          "decay_note": "Aggressive decay to maintain high value for expert challenges"
+        }
+      }
+    }
+  },
+  "bonuses": {
+    "first_blood": {
+      "enabled": true,
+      "percentage": 20,
+      "description": "The first team to solve a challenge receives a 20% bonus on top of the current challenge value.",
+      "per_level_bonus": {
+        "pup": {
+          "bonus_points": 20,
+          "description": "20% of 100pts initial value"
+        },
+        "hunter": {
+          "bonus_points": 40,
+          "description": "20% of 200pts initial value"
+        },
+        "alpha": {
+          "bonus_points": 60,
+          "description": "20% of 300pts initial value"
+        },
+        "fenrir": {
+          "bonus_points": 100,
+          "description": "20% of 500pts initial value"
+        }
+      },
+      "display": {
+        "show_first_blood_badge": true,
+        "badge_icon": "blood-drop",
+        "announcement": true,
+        "announcement_message": "First Blood! Team {team_name} solved '{challenge_name}' first!"
+      }
+    },
+    "time_bonus": {
+      "enabled": true,
+      "percentage": 10,
+      "window_minutes": 60,
+      "description": "Teams that solve a challenge within the first 60 minutes of the CTF starting receive a 10% bonus on top of the points earned.",
+      "per_level_bonus": {
+        "pup": {
+          "bonus_points": 10,
+          "description": "10% of 100pts initial value"
+        },
+        "hunter": {
+          "bonus_points": 20,
+          "description": "10% of 200pts initial value"
+        },
+        "alpha": {
+          "bonus_points": 30,
+          "description": "10% of 300pts initial value"
+        },
+        "fenrir": {
+          "bonus_points": 50,
+          "description": "10% of 500pts initial value"
+        }
+      },
+      "stacking": {
+        "stacks_with_first_blood": true,
+        "max_combined_bonus_percentage": 30,
+        "description": "Time bonus stacks with first blood. A team that gets first blood within the first hour earns up to 30% bonus."
+      }
+    }
+  },
+  "penalties": {
+    "wrong_submissions": {
+      "enabled": false,
+      "penalty_per_wrong_answer": 0,
+      "cooldown_seconds": 30,
+      "max_attempts_before_lockout": 0,
+      "lockout_enabled": false,
+      "description": "No point penalty for wrong submissions, but a 30-second cooldown between attempts prevents brute forcing."
+    },
+    "hint_costs": {
+      "deducted_from_challenge_score": true,
+      "description": "Hint costs are deducted from the points earned for that specific challenge, not from the team's total score."
+    }
+  },
+  "scoreboard_display": {
+    "visibility": "public",
+    "freeze_enabled": true,
+    "freeze_minutes_before_end": 30,
+    "freeze_description": "Scoreboard freezes 30 minutes before the competition ends to maintain suspense for the final rankings.",
+    "display_options": {
+      "show_team_scores": true,
+      "show_challenge_solves": true,
+      "show_first_blood": true,
+      "show_solve_timestamps": false,
+      "show_team_members": true,
+      "show_category_breakdown": true,
+      "show_solve_percentage": true
+    },
+    "refresh_interval_seconds": 15,
+    "graph_type": "line",
+    "graph_top_teams": 10
+  },
+  "team_configuration": {
+    "team_mode": true,
+    "min_team_size": 1,
+    "max_team_size": 4,
+    "allow_individual": true,
+    "registration": {
+      "open_registration": true,
+      "require_email": true,
+      "email_confirmation": false,
+      "team_password_required": true
+    }
+  },
+  "challenge_unlocking": {
+    "mode": "all_visible",
+    "description": "All challenges are visible from the start. No prerequisite unlocking required.",
+    "alternative_modes": {
+      "progressive": {
+        "description": "Challenges unlock as lower levels are completed. Pup visible from start, Hunter unlocks after 2 Pup solves, Alpha after 2 Hunter solves, Fenrir after 2 Alpha solves.",
+        "unlock_requirements": {
+          "hunter": {"required_pup_solves": 2},
+          "alpha": {"required_hunter_solves": 2},
+          "fenrir": {"required_alpha_solves": 2}
+        }
+      },
+      "scenario_sequential": {
+        "description": "Scenarios unlock sequentially. Scenario 2 requires at least 5 solves in Scenario 1, etc.",
+        "unlock_requirements": {
+          "scenario2": {"scenario1_solves": 5},
+          "scenario3": {"scenario2_solves": 5},
+          "scenario4": {"scenario3_solves": 5}
+        }
+      }
+    }
+  },
+  "maximum_possible_scores": {
+    "description": "Maximum theoretical scores per scenario without any hint deductions, including first blood and time bonuses.",
+    "scenario1_dark_harvest": {
+      "pup": {"count": 10, "base": 1000, "max_with_bonuses": 1300},
+      "hunter": {"count": 10, "base": 2000, "max_with_bonuses": 2600},
+      "alpha": {"count": 9, "base": 2700, "max_with_bonuses": 3510},
+      "fenrir": {"count": 7, "base": 3500, "max_with_bonuses": 4550},
+      "scenario_total_base": 9200,
+      "scenario_total_max": 11960
+    },
+    "scenario2_iron_gate": {
+      "pup": {"count": 10, "base": 1000, "max_with_bonuses": 1300},
+      "hunter": {"count": 10, "base": 2000, "max_with_bonuses": 2600},
+      "alpha": {"count": 9, "base": 2700, "max_with_bonuses": 3510},
+      "fenrir": {"count": 7, "base": 3500, "max_with_bonuses": 4550},
+      "scenario_total_base": 9200,
+      "scenario_total_max": 11960
+    },
+    "scenario3_ghost_shell": {
+      "pup": {"count": 10, "base": 1000, "max_with_bonuses": 1300},
+      "hunter": {"count": 10, "base": 2000, "max_with_bonuses": 2600},
+      "alpha": {"count": 9, "base": 2700, "max_with_bonuses": 3510},
+      "fenrir": {"count": 7, "base": 3500, "max_with_bonuses": 4550},
+      "scenario_total_base": 9200,
+      "scenario_total_max": 11960
+    },
+    "scenario4_supply_chain": {
+      "pup": {"count": 10, "base": 1000, "max_with_bonuses": 1300},
+      "hunter": {"count": 10, "base": 2000, "max_with_bonuses": 2600},
+      "alpha": {"count": 12, "base": 3600, "max_with_bonuses": 4680},
+      "fenrir": {"count": 10, "base": 5000, "max_with_bonuses": 6500},
+      "scenario_total_base": 11600,
+      "scenario_total_max": 15080
+    },
+    "grand_total_base": 39200,
+    "grand_total_max_with_bonuses": 50960,
+    "total_challenges": 150
+  }
+}

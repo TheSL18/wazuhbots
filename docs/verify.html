@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WazuhBOTS — Certificate Verification</title>
+<style>
+/* ================================================================
+   RESET & BASE
+   ================================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:        #0a0e17;
+  --bg-card:   #111827;
+  --bg-card2:  #1a2236;
+  --border:    #1e293b;
+  --text:      #e2e8f0;
+  --text-dim:  #94a3b8;
+  --text-sub:  #64748b;
+  --accent:    #3b82f6;
+  --accent2:   #06b6d4;
+  --green:     #22c55e;
+  --amber:     #f59e0b;
+  --red:       #ef4444;
+  --purple:    #a855f7;
+  --pup:       #22c55e;
+  --hunter:    #3b82f6;
+  --alpha:     #f59e0b;
+  --fenrir:    #ef4444;
+  --radius:    12px;
+  --glow:      0 0 40px rgba(59,130,246,.12);
+}
+html{scroll-behavior:smooth;font-size:16px}
+body{
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  background:var(--bg);color:var(--text);
+  line-height:1.6;overflow-x:hidden;
+  min-height:100vh;
+}
+a{color:var(--accent);text-decoration:none;transition:color .2s}
+a:hover{color:var(--accent2)}
+
+/* ================================================================
+   LAYOUT
+   ================================================================ */
+.container{max-width:720px;margin:0 auto;padding:0 24px}
+
+/* ================================================================
+   HERO
+   ================================================================ */
+.hero{
+  padding:60px 0 40px;text-align:center;position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 500px 300px at 50% 30%, rgba(59,130,246,.08) 0%, transparent 70%),
+    radial-gradient(ellipse 400px 250px at 50% 70%, rgba(6,182,212,.05) 0%, transparent 70%);
+  pointer-events:none;
+}
+.hero-grid{
+  position:absolute;inset:0;opacity:.03;
+  background-image:
+    linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px);
+  background-size:50px 50px;
+  mask-image:radial-gradient(ellipse 70% 60% at 50% 50%, black, transparent);
+}
+
+/* Wolf icon */
+.wolf-icon{
+  width:80px;height:80px;margin:0 auto 20px;opacity:.8;
+}
+
+.hero h1{
+  font-size:2rem;font-weight:800;margin-bottom:4px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero .tagline{
+  font-size:.8rem;letter-spacing:4px;text-transform:uppercase;
+  color:var(--text-dim);font-weight:600;margin-bottom:8px;
+}
+.hero p{color:var(--text-sub);font-size:.95rem}
+
+/* ================================================================
+   SEARCH
+   ================================================================ */
+.search-section{padding:0 0 40px}
+
+.search-box{
+  position:relative;max-width:520px;margin:0 auto;
+}
+.search-box input{
+  width:100%;padding:16px 20px 16px 52px;
+  background:var(--bg-card);border:1.5px solid var(--border);
+  border-radius:var(--radius);color:var(--text);
+  font-size:1.05rem;font-family:'SF Mono','Cascadia Code',monospace;
+  letter-spacing:.5px;transition:all .2s;
+  outline:none;
+}
+.search-box input::placeholder{
+  color:var(--text-sub);font-family:'Segoe UI',system-ui,sans-serif;
+  letter-spacing:0;
+}
+.search-box input:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 4px rgba(59,130,246,.12);
+}
+.search-box .icon{
+  position:absolute;left:18px;top:50%;transform:translateY(-50%);
+  color:var(--text-sub);pointer-events:none;
+}
+.search-box .icon svg{width:20px;height:20px}
+
+.search-hint{
+  text-align:center;margin-top:10px;
+  font-size:.8rem;color:var(--text-sub);
+}
+
+.btn-verify{
+  display:block;width:100%;max-width:520px;margin:16px auto 0;
+  padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border:none;border-radius:var(--radius);color:#fff;
+  font-size:1rem;font-weight:700;cursor:pointer;
+  transition:all .2s;letter-spacing:.5px;
+}
+.btn-verify:hover{
+  box-shadow:0 4px 24px rgba(59,130,246,.3);transform:translateY(-1px);
+}
+.btn-verify:active{transform:translateY(0)}
+.btn-verify:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* ================================================================
+   RESULT
+   ================================================================ */
+.result{
+  max-width:600px;margin:0 auto;
+  display:none;animation:fadeIn .4s ease;
+}
+.result.show{display:block}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* Verdict banner */
+.verdict{
+  text-align:center;padding:28px 24px;border-radius:var(--radius);
+  margin-bottom:24px;position:relative;overflow:hidden;
+}
+.verdict::before{
+  content:'';position:absolute;inset:0;opacity:.06;
+  background:radial-gradient(circle at 50% 50%, currentColor, transparent 70%);
+}
+.verdict.valid{
+  background:rgba(34,197,94,.08);border:1.5px solid rgba(34,197,94,.25);color:var(--green);
+}
+.verdict.invalid{
+  background:rgba(239,68,68,.08);border:1.5px solid rgba(239,68,68,.25);color:var(--red);
+}
+.verdict.warning{
+  background:rgba(245,158,11,.08);border:1.5px solid rgba(245,158,11,.25);color:var(--amber);
+}
+.verdict.notfound{
+  background:rgba(148,163,184,.06);border:1.5px solid rgba(148,163,184,.15);color:var(--text-dim);
+}
+
+.verdict-icon{font-size:2.5rem;margin-bottom:8px}
+.verdict h2{font-size:1.3rem;font-weight:800;margin-bottom:4px}
+.verdict p{font-size:.85rem;opacity:.7}
+
+/* Detail card */
+.detail-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;margin-bottom:16px;
+}
+.detail-card-header{
+  padding:14px 20px;background:var(--bg-card2);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.detail-card-header .num{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;font-weight:700;
+  background:rgba(59,130,246,.12);color:var(--accent);
+}
+.detail-card-header h3{font-size:.9rem;font-weight:700;color:var(--text)}
+.detail-card-header .status{
+  margin-left:auto;font-size:.75rem;font-weight:700;
+  padding:3px 10px;border-radius:20px;
+}
+.status-valid{background:rgba(34,197,94,.12);color:var(--green)}
+.status-invalid{background:rgba(239,68,68,.12);color:var(--red)}
+.status-skip{background:rgba(148,163,184,.1);color:var(--text-sub)}
+.status-nosig{background:rgba(245,158,11,.1);color:var(--amber)}
+
+.detail-card-body{padding:16px 20px}
+.detail-card-body .row{
+  display:flex;justify-content:space-between;
+  padding:6px 0;border-bottom:1px solid rgba(30,41,59,.5);
+}
+.detail-card-body .row:last-child{border-bottom:none}
+.detail-card-body .label{
+  font-size:.8rem;color:var(--text-sub);font-weight:500;
+}
+.detail-card-body .value{
+  font-size:.85rem;color:var(--text);font-weight:600;
+  font-family:'SF Mono','Cascadia Code',monospace;
+}
+
+/* Level badge */
+.level-badge{
+  display:inline-block;padding:2px 10px;border-radius:20px;
+  font-size:.75rem;font-weight:700;
+}
+.level-Pup{background:rgba(34,197,94,.12);color:var(--pup)}
+.level-Hunter{background:rgba(59,130,246,.12);color:var(--hunter)}
+.level-Alpha{background:rgba(245,158,11,.12);color:var(--alpha)}
+.level-Fenrir{background:rgba(239,68,68,.12);color:var(--fenrir)}
+.level-Participant{background:rgba(148,163,184,.1);color:var(--text-dim)}
+
+/* ================================================================
+   FOOTER
+   ================================================================ */
+footer{
+  text-align:center;padding:40px 0 30px;
+  border-top:1px solid var(--border);margin-top:40px;
+}
+footer p{font-size:.8rem;color:var(--text-sub)}
+footer a{color:var(--accent)}
+
+/* ================================================================
+   LOADING
+   ================================================================ */
+.loading{display:none;text-align:center;padding:30px}
+.loading.show{display:block}
+.spinner{
+  width:36px;height:36px;border:3px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin .8s linear infinite;margin:0 auto 12px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ================================================================
+   ERROR TOAST
+   ================================================================ */
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:var(--bg-card2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 24px;
+  font-size:.85rem;color:var(--text-dim);
+  box-shadow:0 8px 30px rgba(0,0,0,.4);
+  opacity:0;transition:opacity .3s;pointer-events:none;z-index:100;
+}
+.toast.show{opacity:1;pointer-events:auto}
+
+/* ================================================================
+   RESPONSIVE
+   ================================================================ */
+@media(max-width:600px){
+  .hero h1{font-size:1.6rem}
+  .container{padding:0 16px}
+  .search-box input{font-size:.9rem;padding:14px 16px 14px 44px}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- HERO -->
+<!-- ============================================================ -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="container" style="position:relative;z-index:1">
+    <!-- Inline wolf icon -->
+    <svg class="wolf-icon" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="100" cy="100" r="96" fill="#0a0e17" stroke="url(#wg)" stroke-width="2" opacity=".6"/>
+      <defs><linearGradient id="wg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs>
+      <g transform="translate(-10,-8)">
+        <polygon points="62,52 84,26 96,68" fill="url(#wg)" opacity=".9"/>
+        <polygon points="158,52 136,26 124,68" fill="url(#wg)" opacity=".9"/>
+        <polygon points="84,48 110,34 136,48 132,76 110,64 88,76" fill="url(#wg)" opacity=".85"/>
+        <polygon points="88,76 110,64 104,102 68,108 58,80" fill="url(#wg)" opacity=".75"/>
+        <polygon points="132,76 110,64 116,102 152,108 162,80" fill="url(#wg)" opacity=".75"/>
+        <polygon points="68,108 104,102 96,140 76,134" fill="url(#wg)" opacity=".65"/>
+        <polygon points="152,108 116,102 124,140 144,134" fill="url(#wg)" opacity=".65"/>
+        <polygon points="76,134 96,140 110,162 124,140 144,134 110,178" fill="url(#wg)" opacity=".5"/>
+        <polygon points="76,84 96,78 94,96 74,98" fill="#06b6d4"/>
+        <polygon points="144,84 124,78 126,96 146,98" fill="#06b6d4"/>
+        <circle cx="86" cy="88" r="3.5" fill="#0a0e17"/><circle cx="134" cy="88" r="3.5" fill="#0a0e17"/>
+        <circle cx="88" cy="86" r="1.5" fill="#fff" opacity=".8"/>
+        <circle cx="136" cy="86" r="1.5" fill="#fff" opacity=".8"/>
+      </g>
+    </svg>
+
+    <div class="tagline">Boss of the SOC</div>
+    <h1>Certificate Verification</h1>
+    <p>Verify the authenticity of a WazuhBOTS CTF certificate</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SEARCH -->
+<!-- ============================================================ -->
+<section class="search-section">
+  <div class="container">
+    <div class="search-box">
+      <span class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </span>
+      <input type="text" id="certInput" placeholder="Enter Certificate ID (WBOTS-XXXXXXXXXXXX)"
+             maxlength="18" spellcheck="false" autocomplete="off">
+    </div>
+    <p class="search-hint">Find the Certificate ID at the bottom of the certificate document</p>
+    <button class="btn-verify" id="btnVerify" onclick="verify()">Verify Certificate</button>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- LOADING -->
+<!-- ============================================================ -->
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <p style="color:var(--text-dim);font-size:.9rem">Verifying certificate...</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- RESULT -->
+<!-- ============================================================ -->
+<div class="result" id="result">
+  <div class="container">
+    <!-- Verdict -->
+    <div class="verdict" id="verdict"></div>
+
+    <!-- Layer 1: Registry -->
+    <div class="detail-card" id="card-registry"></div>
+
+    <!-- Layer 2: HMAC -->
+    <div class="detail-card" id="card-hmac"></div>
+
+    <!-- Layer 3: GPG -->
+    <div class="detail-card" id="card-gpg"></div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- TOAST -->
+<!-- ============================================================ -->
+<div class="toast" id="toast"></div>
+
+<!-- ============================================================ -->
+<!-- FOOTER -->
+<!-- ============================================================ -->
+<footer>
+  <div class="container">
+    <p>WazuhBOTS v1.0 &mdash; Open-Source CTF Platform &mdash; <a href="index.html">Home</a></p>
+    <p style="margin-top:6px">GPG Fingerprint: <code style="font-size:.75rem;color:var(--accent)">8862 AB06 0D18 A075 60CF D5E5 E561 6555 DD4E DAAE</code></p>
+  </div>
+</footer>
+
+<!-- ============================================================ -->
+<!-- SCRIPT -->
+<!-- ============================================================ -->
+<script>
+// Registry data — loaded from registry.json or embedded at build time
+let REGISTRY = null;
+// __EMBEDDED_REGISTRY_START__
+REGISTRY = {"version": 1, "certificates": {"WBOTS-478FF407836F": {"cert_id": "WBOTS-478FF407836F", "name": "jpayares", "score": 1550, "rank": 1, "solved": 14, "level": "Pup — Junior Analyst", "date": "March 02, 2026", "issued_at": "2026-03-02T19:19:06.569888+00:00", "signed": true, "gpg_signed": true, "gpg_key_id": "E5616555DD4EDAAE", "hmac_verified": true}}, "gpg_key_id": "E5616555DD4EDAAE", "gpg_fingerprint": "8862AB060D18A07560CFD5E5E5616555DD4EDAAE"};
+// __EMBEDDED_REGISTRY_END__
+
+
+
+const CERT_RE = /^WBOTS-[A-F0-9]{12}$/;
+const GPG_FINGERPRINT = '8862AB060D18A07560CFD5E5E5616555DD4EDAAE';
+
+// ── Load registry ──────────────────────────────────────────────
+async function loadRegistry() {
+  const paths = [
+    '../branding/certificates/registry.json',
+    './registry.json',
+    '/registry.json',
+  ];
+  for (const p of paths) {
+    try {
+      const resp = await fetch(p);
+      if (resp.ok) {
+        REGISTRY = await resp.json();
+        return true;
+      }
+    } catch {}
+  }
+  return false;
+}
+
+// ── Format number with commas ──────────────────────────────────
+function fmt(n) {
+  return n.toLocaleString('en-US');
+}
+
+// ── Get level keyword from full level string ───────────────────
+function levelKey(level) {
+  if (level.includes('Fenrir')) return 'Fenrir';
+  if (level.includes('Alpha')) return 'Alpha';
+  if (level.includes('Hunter')) return 'Hunter';
+  if (level.includes('Pup')) return 'Pup';
+  return 'Participant';
+}
+
+// ── Stars for difficulty ───────────────────────────────────────
+function stars(level) {
+  const map = { Pup: 1, Hunter: 2, Alpha: 3, Fenrir: 4, Participant: 0 };
+  const n = map[levelKey(level)] || 0;
+  return '★'.repeat(n) + '☆'.repeat(4 - n);
+}
+
+// ── Toast notification ─────────────────────────────────────────
+function toast(msg, ms = 3000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), ms);
+}
+
+// ── HMAC-SHA256 (Web Crypto) ───────────────────────────────────
+async function hmacVerify(record, certId, secret) {
+  if (!secret) return null;
+  const payload = `WazuhBOTS-v1|${record.name}|${record.score}|${record.rank}|${record.solved}`;
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(payload));
+  const hex = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+  const computed = 'WBOTS-' + hex.substring(0, 12).toUpperCase();
+  return computed === certId;
+}
+
+// ── Build detail card HTML ─────────────────────────────────────
+function buildCard(num, title, statusClass, statusText, rows) {
+  let rowsHtml = rows.map(([label, value]) =>
+    `<div class="row"><span class="label">${label}</span><span class="value">${value}</span></div>`
+  ).join('');
+  return `
+    <div class="detail-card-header">
+      <span class="num">${num}</span>
+      <h3>${title}</h3>
+      <span class="status ${statusClass}">${statusText}</span>
+    </div>
+    <div class="detail-card-body">${rowsHtml}</div>
+  `;
+}
+
+// ── Main verify function ───────────────────────────────────────
+async function verify() {
+  const input = document.getElementById('certInput').value.trim().toUpperCase();
+  const resultEl = document.getElementById('result');
+  const loadingEl = document.getElementById('loading');
+  const verdictEl = document.getElementById('verdict');
+
+  resultEl.classList.remove('show');
+
+  // Validate format
+  if (!CERT_RE.test(input)) {
+    toast('Invalid format. Expected: WBOTS-XXXXXXXXXXXX');
+    return;
+  }
+
+  // Load registry if not yet loaded
+  if (!REGISTRY) {
+    loadingEl.classList.add('show');
+    const ok = await loadRegistry();
+    loadingEl.classList.remove('show');
+    if (!ok) {
+      toast('Could not load certificate registry');
+      return;
+    }
+  }
+
+  loadingEl.classList.add('show');
+
+  // Simulate small delay for UX
+  await new Promise(r => setTimeout(r, 400));
+
+  // ── Layer 1: Registry lookup ──
+  const record = REGISTRY.certificates ? REGISTRY.certificates[input] : null;
+  let registryCard;
+
+  if (record) {
+    const lk = levelKey(record.level);
+    registryCard = buildCard(1, 'Registry Lookup', 'status-valid', 'FOUND', [
+      ['Name', record.name],
+      ['Score', `${fmt(record.score)} / 39,200 pts`],
+      ['Rank', `#${record.rank}`],
+      ['Challenges', `${record.solved} / 150`],
+      ['Level', `<span class="level-badge level-${lk}">${stars(record.level)} ${record.level}</span>`],
+      ['Date', record.date],
+      ['Issued', record.issued_at ? new Date(record.issued_at).toLocaleString() : 'N/A'],
+    ]);
+  } else {
+    registryCard = buildCard(1, 'Registry Lookup', 'status-invalid', 'NOT FOUND', [
+      ['Status', 'This certificate ID was not found in the registry'],
+    ]);
+  }
+  document.getElementById('card-registry').innerHTML = registryCard;
+
+  // ── Layer 2: HMAC ──
+  let hmacCard;
+  if (record && record.hmac_verified === true) {
+    hmacCard = buildCard(2, 'HMAC Integrity', 'status-valid', 'VALID', [
+      ['Status', 'HMAC signature matches — data integrity confirmed'],
+      ['Method', 'HMAC-SHA256'],
+      ['Verified', 'Server-side at publish time'],
+    ]);
+  } else if (record && record.hmac_verified === false) {
+    hmacCard = buildCard(2, 'HMAC Integrity', 'status-invalid', 'INVALID', [
+      ['Status', 'HMAC mismatch — possible data tampering'],
+      ['Method', 'HMAC-SHA256'],
+    ]);
+  } else if (record && record.signed) {
+    hmacCard = buildCard(2, 'HMAC Integrity', 'status-nosig', 'PENDING', [
+      ['Status', 'Certificate was HMAC-signed but not yet verified'],
+      ['Note', 'Run: python3 scripts/publish_registry.py --embed'],
+    ]);
+  } else if (record) {
+    hmacCard = buildCard(2, 'HMAC Integrity', 'status-skip', 'UNSIGNED', [
+      ['Status', 'Certificate was generated without HMAC signing'],
+    ]);
+  } else {
+    hmacCard = buildCard(2, 'HMAC Integrity', 'status-skip', 'N/A', [
+      ['Status', 'Cannot verify — certificate not in registry'],
+    ]);
+  }
+  document.getElementById('card-hmac').innerHTML = hmacCard;
+
+  // ── Layer 3: GPG ──
+  let gpgCard;
+  if (record && record.gpg_signed) {
+    gpgCard = buildCard(3, 'GPG Signature', 'status-valid', 'SIGNED', [
+      ['Status', 'Certificate was GPG-signed by the organizer'],
+      ['Key ID', record.gpg_key_id || GPG_FINGERPRINT],
+      ['Signer', 'Kevin Muñoz'],
+      ['Verify', '<code style="font-size:.7rem;color:var(--accent2)">gpg --verify cert.svg.asc cert.svg</code>'],
+    ]);
+  } else if (record) {
+    gpgCard = buildCard(3, 'GPG Signature', 'status-nosig', 'NO SIG', [
+      ['Status', 'Certificate does not have a GPG signature'],
+    ]);
+  } else {
+    gpgCard = buildCard(3, 'GPG Signature', 'status-skip', 'N/A', [
+      ['Status', 'Cannot verify — certificate not in registry'],
+    ]);
+  }
+  document.getElementById('card-gpg').innerHTML = gpgCard;
+
+  // ── Verdict ──
+  const hmacFailed = record && record.hmac_verified === false;
+  const layers = [
+    record ? 'Registry' : null,
+    record && record.hmac_verified === true ? 'HMAC' : null,
+    record && record.gpg_signed ? 'GPG' : null,
+  ].filter(Boolean);
+
+  if (hmacFailed) {
+    verdictEl.className = 'verdict invalid';
+    verdictEl.innerHTML = `
+      <div class="verdict-icon">&#9888;</div>
+      <h2>WARNING: INTEGRITY MISMATCH</h2>
+      <p>HMAC verification failed — possible data tampering</p>
+    `;
+  } else if (record && layers.length > 0) {
+    verdictEl.className = 'verdict valid';
+    verdictEl.innerHTML = `
+      <div class="verdict-icon">&#10003;</div>
+      <h2>CERTIFICATE IS VALID</h2>
+      <p>${layers.join(' + ')} verified</p>
+    `;
+  } else {
+    verdictEl.className = 'verdict notfound';
+    verdictEl.innerHTML = `
+      <div class="verdict-icon">&#10007;</div>
+      <h2>CERTIFICATE NOT FOUND</h2>
+      <p>This ID does not match any issued certificate</p>
+    `;
+  }
+
+  loadingEl.classList.remove('show');
+  resultEl.classList.add('show');
+  resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Event listeners ────────────────────────────────────────────
+document.getElementById('certInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') verify();
+});
+
+// Auto-format input
+document.getElementById('certInput').addEventListener('input', e => {
+  let v = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
+  // Auto-add WBOTS- prefix
+  if (v.length > 0 && !v.startsWith('W') && !v.startsWith('WBOTS')) {
+    v = 'WBOTS-' + v;
+  }
+  e.target.value = v;
+});
+
+// Try to preload registry
+loadRegistry();
+</script>
+</body>
+</html>

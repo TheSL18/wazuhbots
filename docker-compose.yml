@@ -1,0 +1,303 @@
+version: '3.8'
+
+# ============================================
+# WazuhBOTS — Boss of the SOC with Wazuh
+# Created by MrHacker (Kevin Muñoz)
+# Wazuh Technology Ambassador
+# ============================================
+
+services:
+  # ============================================
+  # WAZUH STACK
+  # ============================================
+  wazuh-manager:
+    image: wazuh/wazuh-manager:4.9.0
+    container_name: wazuhbots-manager
+    hostname: wazuh-manager
+    restart: unless-stopped
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        mkdir -p /var/ossec/etc/shared
+        touch /var/ossec/etc/shared/ar.conf
+        exec /init
+    ports:
+      - "1514:1514"      # Agent communication
+      - "1515:1515"      # Agent enrollment
+      - "5514:514/udp"   # Syslog (host 5514 → container 514)
+      - "55000:55000"    # Wazuh API
+    environment:
+      INDEXER_URL: https://wazuh-indexer:9200
+      INDEXER_USERNAME: admin
+      INDEXER_PASSWORD: ${INDEXER_PASSWORD}
+      FILEBEAT_SSL_VERIFICATION_MODE: full
+      SSL_CERTIFICATE_AUTHORITIES: /etc/ssl/root-ca.pem
+      SSL_CERTIFICATE: /etc/ssl/filebeat.pem
+      SSL_KEY: /etc/ssl/filebeat-key.pem
+      API_USERNAME: ${API_USERNAME:-wazuh-wui}
+      API_PASSWORD: ${API_PASSWORD:-ChangeMeAPI123!}
+    volumes:
+      - wazuh_api_configuration:/var/ossec/api/configuration
+      - wazuh_etc:/var/ossec/etc
+      - wazuh_logs:/var/ossec/logs
+      - wazuh_queue:/var/ossec/queue
+      - wazuh_var_multigroups:/var/ossec/var/multigroups
+      - wazuh_integrations:/var/ossec/integrations
+      - wazuh_active_response:/var/ossec/active-response/bin
+      - wazuh_agentless:/var/ossec/agentless
+      - wazuh_wodles:/var/ossec/wodles
+      - filebeat_etc:/etc/filebeat
+      - filebeat_var:/var/lib/filebeat
+      - ./docker/wazuh-manager/config/local_rules.xml:/var/ossec/etc/rules/local_rules.xml
+      - ./docker/wazuh-manager/config/ossec.conf:/wazuh-config-mount/etc/ossec.conf
+      - ./config/wazuh_indexer_ssl_certs/root-ca.pem:/etc/ssl/root-ca.pem
+      - ./config/wazuh_indexer_ssl_certs/wazuh-manager.pem:/etc/ssl/filebeat.pem
+      - ./config/wazuh_indexer_ssl_certs/wazuh-manager-key.pem:/etc/ssl/filebeat-key.pem
+    networks:
+      wazuhbots-net:
+        ipv4_address: 172.26.0.10
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sk https://localhost:55000/security/user/authenticate -u ${API_USERNAME:-wazuh-wui}:${API_PASSWORD:-ChangeMeAPI123!} || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  wazuh-indexer:
+    image: wazuh/wazuh-indexer:4.9.0
+    container_name: wazuhbots-indexer
+    hostname: wazuh-indexer
+    restart: unless-stopped
+    ports:
+      - "9200:9200"
+    environment:
+      OPENSEARCH_JAVA_OPTS: "-Xms${INDEXER_HEAP:-2g} -Xmx${INDEXER_HEAP:-2g}"
+      bootstrap.memory_lock: "true"
+      discovery.type: single-node
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${INDEXER_PASSWORD}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - wazuh_indexer_data:/var/lib/wazuh-indexer
+      - ./config/wazuh_indexer_ssl_certs/root-ca.pem:/usr/share/wazuh-indexer/certs/root-ca.pem
+      - ./config/wazuh_indexer_ssl_certs/wazuh-indexer-key.pem:/usr/share/wazuh-indexer/certs/wazuh-indexer-key.pem
+      - ./config/wazuh_indexer_ssl_certs/wazuh-indexer.pem:/usr/share/wazuh-indexer/certs/wazuh-indexer.pem
+      - ./config/wazuh_indexer_ssl_certs/admin.pem:/usr/share/wazuh-indexer/certs/admin.pem
+      - ./config/wazuh_indexer_ssl_certs/admin-key.pem:/usr/share/wazuh-indexer/certs/admin-key.pem
+      - ./config/wazuh_indexer/wazuh.indexer.yml:/usr/share/wazuh-indexer/opensearch.yml
+    networks:
+      wazuhbots-net:
+        ipv4_address: 172.26.0.11
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sk https://localhost:9200 -u admin:${INDEXER_PASSWORD} || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  wazuh-dashboard:
+    image: wazuh/wazuh-dashboard:4.9.0
+    container_name: wazuhbots-dashboard
+    hostname: wazuh-dashboard
+    restart: unless-stopped
+    ports:
+      - "5601:5601"
+    environment:
+      INDEXER_USERNAME: admin
+      INDEXER_PASSWORD: ${INDEXER_PASSWORD}
+      WAZUH_API_URL: https://wazuh-manager
+      DASHBOARD_USERNAME: kibanaserver
+      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD}
+      SERVER_SSL_ENABLED: "true"
+      API_USERNAME: ${API_USERNAME:-wazuh-wui}
+      API_PASSWORD: ${API_PASSWORD:-ChangeMeAPI123!}
+    volumes:
+      - ./config/wazuh_indexer_ssl_certs/wazuh-dashboard.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard.pem
+      - ./config/wazuh_indexer_ssl_certs/wazuh-dashboard-key.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard-key.pem
+      - ./config/wazuh_indexer_ssl_certs/root-ca.pem:/usr/share/wazuh-dashboard/certs/root-ca.pem
+      - ./config/wazuh_dashboard/opensearch_dashboards.yml:/usr/share/wazuh-dashboard/config/opensearch_dashboards.yml
+      - ./config/wazuh_dashboard/wazuh.yml:/usr/share/wazuh-dashboard/data/wazuh/config/wazuh.yml
+      - ./wazuh/dashboards:/tmp/wazuhbots-dashboards:ro
+    depends_on:
+      wazuh-indexer:
+        condition: service_healthy
+      wazuh-manager:
+        condition: service_healthy
+    networks:
+      wazuhbots-net:
+        ipv4_address: 172.26.0.12
+
+  # ============================================
+  # CTFd PLATFORM
+  # ============================================
+  ctfd:
+    image: ctfd/ctfd:latest
+    container_name: wazuhbots-ctfd
+    hostname: ctfd
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      UPLOAD_FOLDER: /var/uploads
+      DATABASE_URL: mysql+pymysql://ctfd:${CTFD_DB_PASSWORD}@ctfd-db/ctfd
+      REDIS_URL: redis://ctfd-redis:6379
+      WORKERS: 4
+      LOG_FOLDER: /var/log/CTFd
+      ACCESS_LOG: "-"
+      ERROR_LOG: "-"
+      REVERSE_PROXY: "true"
+      SECRET_KEY: ${CTFD_SECRET_KEY}
+    volumes:
+      - ctfd_logs:/var/log/CTFd
+      - ctfd_uploads:/var/uploads
+    depends_on:
+      ctfd-db:
+        condition: service_healthy
+      ctfd-redis:
+        condition: service_started
+    networks:
+      wazuhbots-net:
+        ipv4_address: 172.26.0.20
+
+  ctfd-db:
+    image: mariadb:10.11
+    container_name: wazuhbots-ctfd-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${CTFD_DB_ROOT_PASSWORD}
+      MYSQL_USER: ctfd
+      MYSQL_PASSWORD: ${CTFD_DB_PASSWORD}
+      MYSQL_DATABASE: ctfd
+    volumes:
+      - ctfd_db_data:/var/lib/mysql
+    networks:
+      wazuhbots-net:
+        ipv4_address: 172.26.0.21
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  ctfd-redis:
+    image: redis:7-alpine
+    container_name: wazuhbots-ctfd-redis
+    restart: unless-stopped
+    volumes:
+      - ctfd_redis_data:/data
+    networks:
+      wazuhbots-net:
+        ipv4_address: 172.26.0.22
+
+  # ============================================
+  # NGINX REVERSE PROXY
+  # ============================================
+  nginx:
+    image: nginx:alpine
+    container_name: wazuhbots-nginx
+    restart: unless-stopped
+    ports:
+      - "8880:80"       # HTTP  (host 8880 → container 80)
+      - "8443:443"      # HTTPS (host 8443 → container 443)
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/certs:/etc/nginx/certs:ro
+    depends_on:
+      - wazuh-dashboard
+      - ctfd
+    networks:
+      wazuhbots-net:
+        ipv4_address: 172.26.0.2
+
+  # ============================================
+  # VICTIM MACHINES (Scenarios 1 & 3 - MVP)
+  # ============================================
+  web-srv:
+    build:
+      context: ./docker/victims/web-srv
+      dockerfile: Dockerfile
+    container_name: wazuhbots-web-srv
+    hostname: web-srv
+    restart: unless-stopped
+    environment:
+      WAZUH_MANAGER: wazuh-manager
+      WAZUH_AGENT_GROUP: victims
+      WAZUH_AGENT_NAME: web-srv
+    depends_on:
+      wazuh-manager:
+        condition: service_healthy
+    networks:
+      wazuhbots-net:
+        ipv4_address: 172.26.0.30
+
+  lnx-srv:
+    build:
+      context: ./docker/victims/lnx-srv
+      dockerfile: Dockerfile
+    container_name: wazuhbots-lnx-srv
+    hostname: lnx-srv
+    restart: unless-stopped
+    environment:
+      WAZUH_MANAGER: wazuh-manager
+      WAZUH_AGENT_GROUP: victims
+      WAZUH_AGENT_NAME: lnx-srv
+    depends_on:
+      wazuh-manager:
+        condition: service_healthy
+    networks:
+      wazuhbots-net:
+        ipv4_address: 172.26.0.31
+
+  # ============================================
+  # ATTACK SIMULATION (Fase 2+)
+  # ============================================
+  # caldera:
+  #   image: mitre/caldera:latest
+  #   container_name: wazuhbots-caldera
+  #   hostname: caldera
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8888:8888"
+  #   volumes:
+  #     - ./caldera/adversary_profiles:/usr/src/app/data/adversaries
+  #   networks:
+  #     wazuhbots-net:
+  #       ipv4_address: 172.26.0.50
+
+# ============================================
+# NETWORKS
+# ============================================
+networks:
+  wazuhbots-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${SUBNET:-172.26.0.0/24}
+
+# ============================================
+# VOLUMES
+# ============================================
+volumes:
+  # Wazuh Manager
+  wazuh_api_configuration:
+  wazuh_etc:
+  wazuh_logs:
+  wazuh_queue:
+  wazuh_var_multigroups:
+  wazuh_integrations:
+  wazuh_active_response:
+  wazuh_agentless:
+  wazuh_wodles:
+  filebeat_etc:
+  filebeat_var:
+  # Wazuh Indexer
+  wazuh_indexer_data:
+  # CTFd
+  ctfd_logs:
+  ctfd_uploads:
+  ctfd_db_data:
+  ctfd_redis_data:

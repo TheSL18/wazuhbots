@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0e17"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="wolfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="50%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+      <path d="M 50 0 L 0 0 0 50" fill="none" stroke="#1e293b" stroke-width="0.5" opacity="0.25"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+  <rect width="1200" height="630" fill="url(#grid)" opacity="0.3"/>
+
+  <!-- Glow accents -->
+  <circle cx="600" cy="200" r="300" fill="#3b82f6" opacity="0.04"/>
+  <circle cx="600" cy="350" r="250" fill="#06b6d4" opacity="0.03"/>
+
+  <!-- Border -->
+  <rect x="4" y="4" width="1192" height="622" rx="8" fill="none" stroke="url(#wolfGrad)" stroke-width="1.5" opacity="0.2"/>
+  <rect x="0" y="0" width="1200" height="4" fill="url(#wolfGrad)" opacity="0.6"/>
+
+  <!-- Wolf Head - Large Centered -->
+  <g transform="translate(600,190) scale(2)" filter="url(#glow)">
+    <polygon points="-38,-35 -22,-55 -14,-25" fill="url(#wolfGrad)" opacity="0.85"/>
+    <polygon points="38,-35 22,-55 14,-25" fill="url(#wolfGrad)" opacity="0.85"/>
+    <polygon points="-22,-35 0,-45 22,-35 18,-15 0,-22 -18,-15" fill="url(#wolfGrad)" opacity="0.8"/>
+    <polygon points="-18,-15 0,-22 -5,8 -35,10 -40,-12" fill="url(#wolfGrad)" opacity="0.7"/>
+    <polygon points="18,-15 0,-22 5,8 35,10 40,-12" fill="url(#wolfGrad)" opacity="0.7"/>
+    <polygon points="-35,10 -5,8 -10,30 -28,26" fill="url(#wolfGrad)" opacity="0.6"/>
+    <polygon points="35,10 5,8 10,30 28,26" fill="url(#wolfGrad)" opacity="0.6"/>
+    <polygon points="-28,26 -10,30 0,48 10,30 28,26 0,62" fill="url(#wolfGrad)" opacity="0.45"/>
+    <!-- Eyes -->
+    <polygon points="-30,-10 -18,-14 -17,-4 -30,-2" fill="#06b6d4"/>
+    <polygon points="30,-10 18,-14 17,-4 30,-2" fill="#06b6d4"/>
+    <circle cx="-23" cy="-8" r="3" fill="#0a0e17"/>
+    <circle cx="23" cy="-8" r="3" fill="#0a0e17"/>
+    <circle cx="-22" cy="-9.5" r="1.3" fill="#fff" opacity="0.8"/>
+    <circle cx="24" cy="-9.5" r="1.3" fill="#fff" opacity="0.8"/>
+  </g>
+
+  <!-- Title -->
+  <text x="600" y="420" text-anchor="middle" font-family="'Segoe UI','SF Pro Display',system-ui,sans-serif"
+        font-size="88" font-weight="800" letter-spacing="-2" fill="url(#textGrad)">
+    Wazuh<tspan fill="#e2e8f0" font-weight="900">BOTS</tspan>
+  </text>
+
+  <!-- Subtitle -->
+  <text x="600" y="465" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif"
+        font-size="22" font-weight="600" letter-spacing="10" fill="#94a3b8">
+    BOSS OF THE SOC
+  </text>
+
+  <rect x="450" y="480" width="300" height="2" rx="1" fill="url(#wolfGrad)" opacity="0.4"/>
+
+  <!-- Description -->
+  <text x="600" y="512" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif"
+        font-size="18" fill="#64748b">
+    Open-Source Cybersecurity CTF Platform
+  </text>
+
+  <!-- Bottom stats bar -->
+  <g transform="translate(0,560)">
+    <rect x="200" y="0" width="800" height="40" rx="20" fill="#111827" stroke="#1e293b" stroke-width="1"/>
+    <text y="26" text-anchor="middle" font-family="'SF Mono',monospace" font-size="13">
+      <tspan x="310" fill="#3b82f6" font-weight="700">150</tspan><tspan fill="#64748b"> Challenges</tspan>
+      <tspan x="470" fill="#06b6d4" font-weight="700">4</tspan><tspan fill="#64748b"> Scenarios</tspan>
+      <tspan x="620" fill="#22c55e" font-weight="700">95.7K</tspan><tspan fill="#64748b"> Events</tspan>
+      <tspan x="790" fill="#f59e0b" font-weight="700">Wazuh</tspan><tspan fill="#64748b"> SIEM</tspan>
+      <tspan x="920" fill="#a855f7" font-weight="700">MIT</tspan><tspan fill="#64748b"> License</tspan>
+    </text>
+  </g>
+</svg>

@@ -1,0 +1,26 @@
+# WazuhBOTS - Auditd rules for Ghost in the Shell scenario
+# Monitor kernel module loading
+-w /sbin/insmod -p x -k kernel_modules
+-w /sbin/rmmod -p x -k kernel_modules
+-w /sbin/modprobe -p x -k kernel_modules
+-a always,exit -F arch=b64 -S init_module -S finit_module -k kernel_modules
+-a always,exit -F arch=b64 -S delete_module -k kernel_modules
+
+# Monitor file changes in sensitive directories
+-w /etc/passwd -p wa -k identity
+-w /etc/shadow -p wa -k identity
+-w /etc/sudoers -p wa -k sudo_changes
+-w /etc/ssh/sshd_config -p wa -k sshd_config
+
+# Monitor command execution
+-a always,exit -F arch=b64 -S execve -k exec_commands
+
+# Monitor network connections
+-a always,exit -F arch=b64 -S connect -k network_connect
+
+# Monitor cron changes
+-w /etc/crontab -p wa -k cron_changes
+-w /var/spool/cron/ -p wa -k cron_changes
+
+# Monitor log tampering
+-w /var/log/ -p wa -k log_tampering

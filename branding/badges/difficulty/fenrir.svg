@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" fill="none">
+  <defs>
+    <linearGradient id="fg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="100%" stop-color="#dc2626"/>
+    </linearGradient>
+    <linearGradient id="fire" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#ef4444"/>
+      <stop offset="50%" stop-color="#f97316"/>
+      <stop offset="100%" stop-color="#fbbf24"/>
+    </linearGradient>
+    <filter id="gl"><feGaussianBlur stdDeviation="2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glStr"><feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <circle cx="80" cy="80" r="76" fill="#0a0e17" stroke="#ef4444" stroke-width="2.5" stroke-opacity="0.5"/>
+  <circle cx="80" cy="80" r="68" fill="none" stroke="#ef4444" stroke-width="0.8" stroke-opacity="0.15" stroke-dasharray="2,3"/>
+
+  <!-- Flames around border -->
+  <g opacity="0.15" filter="url(#glStr)">
+    <path d="M80,6 Q85,20 78,18 Q82,12 80,6" fill="url(#fire)"/>
+    <path d="M42,18 Q50,30 44,28 Q48,22 42,18" fill="url(#fire)"/>
+    <path d="M118,18 Q126,30 120,28 Q124,22 118,18" fill="url(#fire)"/>
+    <path d="M150,50 Q155,62 148,58 Q152,54 150,50" fill="url(#fire)"/>
+    <path d="M10,50 Q15,62 8,58 Q12,54 10,50" fill="url(#fire)"/>
+  </g>
+
+  <!-- FENRIR - Monstrous wolf, jaws open -->
+  <g transform="translate(80,55)" filter="url(#gl)">
+    <!-- Ears (ragged, wild) -->
+    <polygon points="-26,-6 -20,-38 -14,-10 -18,-32 -8,-4" fill="url(#fg)" opacity="0.9"/>
+    <polygon points="26,-6 20,-38 14,-10 18,-32 8,-4" fill="url(#fg)" opacity="0.9"/>
+    <!-- Head (massive) -->
+    <ellipse cx="0" cy="0" rx="26" ry="20" fill="url(#fg)" opacity="0.7"/>
+    <!-- Upper jaw -->
+    <ellipse cx="0" cy="8" rx="16" ry="12" fill="url(#fg)" opacity="0.55"/>
+    <!-- Lower jaw (open, snarling) -->
+    <ellipse cx="0" cy="26" rx="14" ry="8" fill="url(#fg)" opacity="0.5"/>
+    <!-- Open mouth gap -->
+    <ellipse cx="0" cy="18" rx="10" ry="6" fill="#0a0e17" opacity="0.7"/>
+    <!-- Fangs -->
+    <polygon points="-7,14 -5,24 -3,14" fill="#e2e8f0" opacity="0.7"/>
+    <polygon points="7,14 5,24 3,14" fill="#e2e8f0" opacity="0.7"/>
+    <polygon points="-4,14 -3,20 -2,14" fill="#e2e8f0" opacity="0.5"/>
+    <polygon points="4,14 3,20 2,14" fill="#e2e8f0" opacity="0.5"/>
+    <!-- Lower fangs -->
+    <polygon points="-5,22 -4,16 -3,22" fill="#e2e8f0" opacity="0.5"/>
+    <polygon points="5,22 4,16 3,22" fill="#e2e8f0" opacity="0.5"/>
+    <!-- Eyes (burning, red glow) -->
+    <g filter="url(#glStr)">
+      <polygon points="-18,-3 -7,-7 -6,2 -18,3" fill="#fbbf24"/>
+      <polygon points="18,-3 7,-7 6,2 18,3" fill="#fbbf24"/>
+    </g>
+    <circle cx="-12" cy="-2" r="2.5" fill="#ef4444"/>
+    <circle cx="12" cy="-2" r="2.5" fill="#ef4444"/>
+    <!-- Nose wrinkle (snarling) -->
+    <path d="M-6,8 Q-3,6 0,8 Q3,6 6,8" fill="none" stroke="#0a0e17" stroke-width="0.8" opacity="0.4"/>
+    <!-- Chain (Norse binding) -->
+    <g stroke="#94a3b8" stroke-width="1.5" fill="none" opacity="0.3">
+      <ellipse cx="-30" cy="10" rx="5" ry="3" transform="rotate(-20,-30,10)"/>
+      <ellipse cx="30" cy="10" rx="5" ry="3" transform="rotate(20,30,10)"/>
+    </g>
+  </g>
+
+  <text x="80" y="117" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif"
+        font-size="18" font-weight="900" fill="#ef4444">FENRIR</text>
+  <text x="80" y="133" text-anchor="middle" font-family="'SF Mono',monospace"
+        font-size="11" fill="#94a3b8">500 pts</text>
+
+  <!-- Star rating: 4/4 -->
+  <g transform="translate(56,140)" fill="#ef4444">
+    <polygon points="8,0 10,5 16,5 11,8 13,14 8,10 3,14 5,8 0,5 6,5" transform="scale(0.7)"/>
+    <polygon points="8,0 10,5 16,5 11,8 13,14 8,10 3,14 5,8 0,5 6,5" transform="translate(14,0) scale(0.7)"/>
+    <polygon points="8,0 10,5 16,5 11,8 13,14 8,10 3,14 5,8 0,5 6,5" transform="translate(28,0) scale(0.7)"/>
+    <polygon points="8,0 10,5 16,5 11,8 13,14 8,10 3,14 5,8 0,5 6,5" transform="translate(42,0) scale(0.7)"/>
+  </g>
+</svg>

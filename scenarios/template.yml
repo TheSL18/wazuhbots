@@ -1,0 +1,99 @@
+# ============================================
+# WazuhBOTS — New Scenario Template
+# ============================================
+# Copy this file and customize it to create a new attack scenario.
+# See docs/CREATING_SCENARIOS.md for detailed instructions.
+
+scenario:
+  name: "Your Scenario Name"
+  codename: "operation_codename"
+  id: 5  # Increment from last scenario
+  difficulty: "mixed"  # easy, medium, hard, mixed
+  version: "1.0"
+  author: "Your Name"
+
+  narrative: |
+    Write a compelling narrative describing the attack scenario.
+    Include context about the target organization and the attacker's motivation.
+    This narrative is shown to participants to set the scene.
+
+  timeframe:
+    duration_hours: 24
+    attack_window_hours: 4
+
+  kill_chain:
+    - step: 1
+      phase: "Initial Access"
+      mitre_id: "T1190"
+      description: "Description of the initial access technique"
+      wazuh_rules: [31101]
+      tools: ["tool_name"]
+
+    - step: 2
+      phase: "Execution"
+      mitre_id: "T1059"
+      description: "Description of the execution technique"
+      wazuh_rules: [5715]
+      tools: ["tool_name"]
+
+    # Add more steps as needed...
+
+  victims:
+    - hostname: "target-srv"
+      os: "ubuntu:22.04"
+      services: ["apache2", "mysql"]
+      wazuh_agent: true
+      agent_group: "victims"
+      dockerfile: "docker/victims/target-srv/Dockerfile"
+
+  questions:
+    level1:  # Cachorro (Pup) - 100 pts each
+      - text: "Basic question about dashboards or alerts?"
+        flag: "answer"
+        points: 100
+        hints:
+          - text: "First hint (cheapest)"
+            cost: 25
+          - text: "More specific hint"
+            cost: 50
+
+    level2:  # Cazador (Hunter) - 200 pts each
+      - text: "Intermediate question requiring correlation?"
+        flag: "answer"
+        points: 200
+        hints:
+          - text: "Correlation hint"
+            cost: 50
+
+    level3:  # Alfa (Alpha) - 300 pts each
+      - text: "Advanced question requiring deep analysis?"
+        flag: "answer"
+        points: 300
+        hints:
+          - text: "Advanced technique hint"
+            cost: 75
+
+    level4:  # Fenrir (Boss) - 500 pts each
+      - text: "Expert-level question requiring forensic skills?"
+        flag: "answer"
+        points: 500
+        hints:
+          - text: "Expert hint"
+            cost: 100
+
+  custom_rules:
+    - id: 88000
+      level: 12
+      description: "Custom rule description"
+      match_field: "rule.groups"
+      match_value: "custom_pattern"
+      mitre_id: "T1190"
+
+  attack_commands:
+    # Commands to generate the attack data
+    preparation:
+      - description: "Generate baseline traffic"
+        command: "scripts/generate_baseline.sh --target target-srv --duration 24h"
+    attack:
+      - description: "Execute attack phase 1"
+        command: "your_attack_command_here"

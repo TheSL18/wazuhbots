@@ -1,0 +1,232 @@
+<!--
+  WazuhBOTS - Custom Decoders
+  ============================
+  Enhanced decoders for:
+    1. Apache/Nginx access logs with extended fields
+    2. Simulated Windows Event Log (JSON-formatted)
+    3. Custom WazuhBOTS application logs
+-->
+
+<!-- ============================================================ -->
+<!--  ENHANCED APACHE ACCESS LOG DECODER                          -->
+<!--  Parses Combined Log Format with extra fields:               -->
+<!--    IP - ident - user [date] "method uri proto" status size    -->
+<!--    "referer" "user-agent" response_time_us                   -->
+<!-- ============================================================ -->
+
+<!-- Parent decoder: match the overall Apache combined log line -->
+<decoder name="apache-access-enhanced">
+  <prematch type="pcre2">^\d+\.\d+\.\d+\.\d+\s+\S+\s+\S+\s+\[</prematch>
+</decoder>
+
+<!-- Child decoder: extract all standard fields -->
+<decoder name="apache-access-enhanced">
+  <parent>apache-access-enhanced</parent>
+  <regex type="pcre2">^(\d+\.\d+\.\d+\.\d+)\s+\S+\s+(\S+)\s+\[(\d+/\w+/\d+:\d+:\d+:\d+\s+[+-]\d+)\]\s+"(\w+)\s+(\S+)\s+(\S+)"\s+(\d+)\s+(\d+|-)\s+"([^"]*)"\s+"([^"]*)"</regex>
+  <order>srcip,srcuser,timestamp,protocol,url,http_version,status,extra_data,referer,http_user_agent</order>
+</decoder>
+
+<!-- Child decoder: extract response time if present (microseconds at end) -->
+<decoder name="apache-access-enhanced">
+  <parent>apache-access-enhanced</parent>
+  <regex type="pcre2">"\s+(\d+)$</regex>
+  <order>response_time</order>
+</decoder>
+
+<!-- ============================================================ -->
+<!--  ENHANCED NGINX ACCESS LOG DECODER                           -->
+<!--  Parses custom nginx log_format with upstream info:          -->
+<!--    IP - user [date] "request" status size "ref" "ua"         -->
+<!--    rt=N urt=N ucs=STATUS                                     -->
+<!-- ============================================================ -->
+
+<decoder name="nginx-access-enhanced">
+  <prematch type="pcre2">^\d+\.\d+\.\d+\.\d+\s+-\s+\S+\s+\[.*\]\s+"</prematch>
+</decoder>
+
+<decoder name="nginx-access-enhanced">
+  <parent>nginx-access-enhanced</parent>
+  <regex type="pcre2">^(\d+\.\d+\.\d+\.\d+)\s+-\s+(\S+)\s+\[([^\]]+)\]\s+"(\w+)\s+(\S+)\s+\S+"\s+(\d+)\s+(\d+)\s+"([^"]*)"\s+"([^"]*)"</regex>
+  <order>srcip,srcuser,timestamp,protocol,url,status,extra_data,referer,http_user_agent</order>
+</decoder>
+
+<!-- Nginx upstream fields -->
+<decoder name="nginx-access-enhanced">
+  <parent>nginx-access-enhanced</parent>
+  <regex type="pcre2">rt=(\S+)\s+urt=(\S+)\s+ucs=(\d+)</regex>
+  <order>response_time,upstream_response_time,upstream_status</order>
+</decoder>
+
+<!-- ============================================================ -->
+<!--  SIMULATED WINDOWS EVENT LOG DECODER                         -->
+<!--  Parses JSON-formatted Windows event data injected into      -->
+<!--  Wazuh via agent or log file. Simulates Sysmon + Security    -->
+<!--  event channels for BOTS exercises.                          -->
+<!--                                                              -->
+<!--  Expected format:                                            -->
+<!--  {"EventType":"Security","EventID":4625,                     -->
+<!--   "TimeGenerated":"2026-02-27T10:30:00Z",                   -->
+<!--   "Computer":"WIN-DC01","SourceName":"Security",             -->
+<!--   "Message":"An account failed to log on.",                  -->
+<!--   "User":"CORP\\jsmith","LogonType":10,                      -->
+<!--   "SourceIP":"10.0.1.50","Status":"0xC000006D",              -->
+<!--   "ProcessName":"C:\\Windows\\System32\\svchost.exe",        -->
+<!--   "ProcessId":1234}                                          -->
+<!-- ============================================================ -->
+
+<decoder name="windows-event-sim">
+  <prematch type="pcre2">\{"EventType"\s*:</prematch>
+</decoder>
+
+<!-- Extract core Windows event fields -->
+<decoder name="windows-event-sim">
+  <parent>windows-event-sim</parent>
+  <plugin_decoder>JSON_Decoder</plugin_decoder>
+</decoder>
+
+<!-- Secondary child: map JSON keys to Wazuh fields for known event IDs -->
+<decoder name="windows-event-sim-fields">
+  <parent>windows-event-sim</parent>
+  <regex type="pcre2">"EventID"\s*:\s*(\d+).*"Computer"\s*:\s*"([^"]+)".*"User"\s*:\s*"([^"]*)"</regex>
+  <order>id,system_name,srcuser</order>
+</decoder>
+
+<!-- Extract source IP if present -->
+<decoder name="windows-event-sim-srcip">
+  <parent>windows-event-sim</parent>
+  <regex type="pcre2">"SourceIP"\s*:\s*"(\d+\.\d+\.\d+\.\d+)"</regex>
+  <order>srcip</order>
+</decoder>
+
+<!-- Extract process information -->
+<decoder name="windows-event-sim-process">
+  <parent>windows-event-sim</parent>
+  <regex type="pcre2">"ProcessName"\s*:\s*"([^"]+)".*"ProcessId"\s*:\s*(\d+)</regex>
+  <order>process_name,process_id</order>
+</decoder>
+
+<!-- Logon type extraction (4624/4625 events) -->
+<decoder name="windows-event-sim-logon">
+  <parent>windows-event-sim</parent>
+  <regex type="pcre2">"LogonType"\s*:\s*(\d+)</regex>
+  <order>logon_type</order>
+</decoder>
+
+<!-- Sysmon Event ID 1 - Process Create -->
+<decoder name="windows-sysmon-sim">
+  <prematch type="pcre2">\{"EventType"\s*:\s*"Sysmon"</prematch>
+</decoder>
+
+<decoder name="windows-sysmon-sim">
+  <parent>windows-sysmon-sim</parent>
+  <plugin_decoder>JSON_Decoder</plugin_decoder>
+</decoder>
+
+<!-- Sysmon field extraction: CommandLine, ParentImage, Hashes -->
+<decoder name="windows-sysmon-sim-fields">
+  <parent>windows-sysmon-sim</parent>
+  <regex type="pcre2">"CommandLine"\s*:\s*"([^"]+)"</regex>
+  <order>command_line</order>
+</decoder>
+
+<decoder name="windows-sysmon-sim-parent">
+  <parent>windows-sysmon-sim</parent>
+  <regex type="pcre2">"ParentImage"\s*:\s*"([^"]+)"</regex>
+  <order>parent_image</order>
+</decoder>
+
+<decoder name="windows-sysmon-sim-hashes">
+  <parent>windows-sysmon-sim</parent>
+  <regex type="pcre2">"Hashes"\s*:\s*"([^"]+)"</regex>
+  <order>file_hash</order>
+</decoder>
+
+<!-- ============================================================ -->
+<!--  CUSTOM APPLICATION LOG DECODER                              -->
+<!--  Parses WazuhBOTS application-specific logs in the format:   -->
+<!--                                                              -->
+<!--  Text format:                                                -->
+<!--  [2026-02-27 10:30:00] APP_NAME LEVEL: message               -->
+<!--  src=IP user=NAME action=ACTION resource=PATH status=CODE    -->
+<!--                                                              -->
+<!--  JSON format:                                                -->
+<!--  {"timestamp":"...","app":"...","level":"...",                -->
+<!--   "message":"...","src":"...","user":"...",                   -->
+<!--   "action":"...","resource":"...","status":200}              -->
+<!-- ============================================================ -->
+
+<!-- Text format application log -->
+<decoder name="wazuhbots-app">
+  <prematch type="pcre2">^\[\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\]\s+\w+\s+(DEBUG|INFO|WARN|ERROR|CRITICAL):</prematch>
+</decoder>
+
+<decoder name="wazuhbots-app">
+  <parent>wazuhbots-app</parent>
+  <regex type="pcre2">^\[(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\]\s+(\w+)\s+(\w+):\s+(.*)</regex>
+  <order>timestamp,extra_data,status,message</order>
+</decoder>
+
+<!-- Extract key=value pairs from text application log -->
+<decoder name="wazuhbots-app-kv">
+  <parent>wazuhbots-app</parent>
+  <regex type="pcre2">src=(\S+)</regex>
+  <order>srcip</order>
+</decoder>
+
+<decoder name="wazuhbots-app-user">
+  <parent>wazuhbots-app</parent>
+  <regex type="pcre2">user=(\S+)</regex>
+  <order>srcuser</order>
+</decoder>
+
+<decoder name="wazuhbots-app-action">
+  <parent>wazuhbots-app</parent>
+  <regex type="pcre2">action=(\S+)</regex>
+  <order>action</order>
+</decoder>
+
+<decoder name="wazuhbots-app-resource">
+  <parent>wazuhbots-app</parent>
+  <regex type="pcre2">resource=(\S+)</regex>
+  <order>url</order>
+</decoder>
+
+<!-- JSON format application log -->
+<decoder name="wazuhbots-app-json">
+  <prematch type="pcre2">\{"timestamp"\s*:.*"app"\s*:</prematch>
+</decoder>
+
+<decoder name="wazuhbots-app-json">
+  <parent>wazuhbots-app-json</parent>
+  <plugin_decoder>JSON_Decoder</plugin_decoder>
+</decoder>
+
+<!-- Map JSON fields to Wazuh standard fields -->
+<decoder name="wazuhbots-app-json-fields">
+  <parent>wazuhbots-app-json</parent>
+  <regex type="pcre2">"src"\s*:\s*"(\d+\.\d+\.\d+\.\d+)"</regex>
+  <order>srcip</order>
+</decoder>
+
+<decoder name="wazuhbots-app-json-user">
+  <parent>wazuhbots-app-json</parent>
+  <regex type="pcre2">"user"\s*:\s*"([^"]+)"</regex>
+  <order>srcuser</order>
+</decoder>
+
+<!-- ============================================================ -->
+<!--  SURICATA / IDS ALERT DECODER                                -->
+<!--  Parses fast.log format from Suricata if integrated:         -->
+<!--  MM/DD/YYYY-HH:MM:SS.NNNNNN  [**] [1:XXXX:X] msg [**]      -->
+<!--  [Classification: ...] [Priority: N] {PROTO} SRC:P -> DST:P -->
+<!-- ============================================================ -->
+
+<decoder name="suricata-fast">
+  <prematch type="pcre2">^\d{2}/\d{2}/\d{4}-\d{2}:\d{2}:\d{2}\.\d+\s+\[\*\*\]</prematch>
+</decoder>
+
+<decoder name="suricata-fast">
+  <parent>suricata-fast</parent>
+  <regex type="pcre2">^(\d{2}/\d{2}/\d{4}-\d{2}:\d{2}:\d{2})\.\d+\s+\[\*\*\]\s+\[(\d+:\d+:\d+)\]\s+(.*?)\s+\[\*\*\]\s+\[Classification:\s+(.*?)\]\s+\[Priority:\s+(\d+)\]\s+\{(\w+)\}\s+(\d+\.\d+\.\d+\.\d+):(\d+)\s+->\s+(\d+\.\d+\.\d+\.\d+):(\d+)</regex>
+  <order>timestamp,id,message,classification,priority,protocol,srcip,srcport,dstip,dstport</order>
+</decoder>

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" fill="none">
+  <defs>
+    <linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <filter id="gl"><feGaussianBlur stdDeviation="2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <circle cx="80" cy="80" r="76" fill="#0a0e17" stroke="#3b82f6" stroke-width="2" stroke-opacity="0.4"/>
+  <circle cx="80" cy="80" r="68" fill="none" stroke="#3b82f6" stroke-width="0.5" stroke-opacity="0.2" stroke-dasharray="4,4"/>
+
+  <!-- Wolf in stalking pose -->
+  <g transform="translate(80,60)" filter="url(#gl)">
+    <!-- Ears (alert, pointed) -->
+    <polygon points="-22,-10 -15,-30 -8,-8" fill="url(#hg)" opacity="0.8"/>
+    <polygon points="22,-10 15,-30 8,-8" fill="url(#hg)" opacity="0.8"/>
+    <!-- Head -->
+    <ellipse cx="0" cy="0" rx="22" ry="18" fill="url(#hg)" opacity="0.6"/>
+    <!-- Snout -->
+    <ellipse cx="0" cy="10" rx="12" ry="10" fill="url(#hg)" opacity="0.5"/>
+    <ellipse cx="0" cy="18" rx="6" ry="4" fill="url(#hg)" opacity="0.4"/>
+    <!-- Eyes (focused, hunter-like) -->
+    <polygon points="-14,-5 -5,-8 -5,-1 -14,0" fill="#06b6d4"/>
+    <polygon points="14,-5 5,-8 5,-1 14,0" fill="#06b6d4"/>
+    <circle cx="-9" cy="-4" r="2.5" fill="#0a0e17"/>
+    <circle cx="9" cy="-4" r="2.5" fill="#0a0e17"/>
+    <circle cx="-8" cy="-5" r="1" fill="#fff" opacity="0.8"/>
+    <circle cx="10" cy="-5" r="1" fill="#fff" opacity="0.8"/>
+    <!-- Nose -->
+    <ellipse cx="0" cy="14" rx="3.5" ry="2.5" fill="#0a0e17" opacity="0.5"/>
+  </g>
+
+  <text x="80" y="115" text-anchor="middle" font-family="'Segoe UI',system-ui,sans-serif"
+        font-size="18" font-weight="800" fill="#3b82f6">HUNTER</text>
+  <text x="80" y="132" text-anchor="middle" font-family="'SF Mono',monospace"
+        font-size="11" fill="#94a3b8">200 pts</text>
+
+  <!-- Star rating: 2/4 -->
+  <g transform="translate(56,140)" fill="#3b82f6">
+    <polygon points="8,0 10,5 16,5 11,8 13,14 8,10 3,14 5,8 0,5 6,5" transform="scale(0.7)"/>
+    <polygon points="8,0 10,5 16,5 11,8 13,14 8,10 3,14 5,8 0,5 6,5" transform="translate(14,0) scale(0.7)"/>
+    <polygon points="8,0 10,5 16,5 11,8 13,14 8,10 3,14 5,8 0,5 6,5" transform="translate(28,0) scale(0.7)" opacity="0.2"/>
+    <polygon points="8,0 10,5 16,5 11,8 13,14 8,10 3,14 5,8 0,5 6,5" transform="translate(42,0) scale(0.7)" opacity="0.2"/>
+  </g>
+</svg>

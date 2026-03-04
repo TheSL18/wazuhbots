@@ -1,0 +1,338 @@
+/*
+ * WazuhBOTS — CTFd Custom Theme Override
+ * Apply via CTFd Admin > Config > Appearance > Custom CSS
+ * ================================================================ */
+
+/* ── CSS Variables ── */
+:root {
+  --wbots-bg:        #0a0e17;
+  --wbots-bg-card:   #111827;
+  --wbots-bg-card2:  #1a2236;
+  --wbots-border:    #1e293b;
+  --wbots-text:      #e2e8f0;
+  --wbots-text-dim:  #94a3b8;
+  --wbots-accent:    #3b82f6;
+  --wbots-accent2:   #06b6d4;
+  --wbots-green:     #22c55e;
+  --wbots-amber:     #f59e0b;
+  --wbots-red:       #ef4444;
+  --wbots-purple:    #a855f7;
+  --wbots-radius:    12px;
+}
+
+/* ── Dark Theme Base ── */
+body {
+  background-color: var(--wbots-bg) !important;
+  color: var(--wbots-text) !important;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+}
+
+/* ── Navbar ── */
+.navbar, .navbar-default {
+  background: var(--wbots-bg-card) !important;
+  border-bottom: 1px solid var(--wbots-border) !important;
+  box-shadow: 0 1px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+.navbar-brand {
+  font-weight: 800 !important;
+  font-size: 1.3rem !important;
+  background: linear-gradient(135deg, var(--wbots-accent), var(--wbots-accent2)) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+.navbar a, .nav-link {
+  color: var(--wbots-text-dim) !important;
+  transition: color 0.2s ease !important;
+}
+
+.navbar a:hover, .nav-link:hover, .nav-link.active {
+  color: var(--wbots-accent) !important;
+}
+
+/* ── Cards & Panels ── */
+.card, .jumbotron, .panel, .well, .modal-content {
+  background: var(--wbots-bg-card) !important;
+  border: 1px solid var(--wbots-border) !important;
+  border-radius: var(--wbots-radius) !important;
+  color: var(--wbots-text) !important;
+}
+
+.card:hover {
+  border-color: var(--wbots-accent) !important;
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
+
+.card-header {
+  background: var(--wbots-bg-card2) !important;
+  border-bottom: 1px solid var(--wbots-border) !important;
+}
+
+/* ── Challenge Cards ── */
+.challenge-button {
+  border-radius: var(--wbots-radius) !important;
+  border: 1px solid var(--wbots-border) !important;
+  transition: all 0.2s ease !important;
+}
+
+.challenge-button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15) !important;
+}
+
+/* Difficulty-based challenge colors */
+.challenge-button[data-value="100"] {
+  border-left: 3px solid var(--wbots-green) !important;
+}
+.challenge-button[data-value="200"] {
+  border-left: 3px solid var(--wbots-accent) !important;
+}
+.challenge-button[data-value="300"] {
+  border-left: 3px solid var(--wbots-amber) !important;
+}
+.challenge-button[data-value="500"] {
+  border-left: 3px solid var(--wbots-red) !important;
+}
+
+/* ── Buttons ── */
+.btn-primary, .btn-info {
+  background: linear-gradient(135deg, var(--wbots-accent), var(--wbots-accent2)) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.2) !important;
+}
+
+.btn-primary:hover, .btn-info:hover {
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.35) !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn-success {
+  background: var(--wbots-green) !important;
+  border: none !important;
+}
+
+.btn-danger {
+  background: var(--wbots-red) !important;
+  border: none !important;
+}
+
+.btn-warning {
+  background: var(--wbots-amber) !important;
+  border: none !important;
+}
+
+/* ── Forms ── */
+.form-control, input, select, textarea {
+  background: var(--wbots-bg) !important;
+  border: 1px solid var(--wbots-border) !important;
+  color: var(--wbots-text) !important;
+  border-radius: 8px !important;
+  transition: border-color 0.2s ease !important;
+}
+
+.form-control:focus, input:focus, select:focus, textarea:focus {
+  border-color: var(--wbots-accent) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+  outline: none !important;
+}
+
+/* ── Tables ── */
+.table {
+  color: var(--wbots-text) !important;
+}
+
+.table thead th {
+  background: var(--wbots-bg-card2) !important;
+  border-color: var(--wbots-border) !important;
+  color: var(--wbots-text-dim) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 1px !important;
+}
+
+.table td, .table th {
+  border-color: var(--wbots-border) !important;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+  background: rgba(17, 24, 39, 0.5) !important;
+}
+
+.table-hover tbody tr:hover {
+  background: var(--wbots-bg-card2) !important;
+}
+
+/* ── Scoreboard ── */
+#scoreboard table th {
+  background: linear-gradient(135deg, var(--wbots-accent), var(--wbots-accent2)) !important;
+  color: #fff !important;
+}
+
+/* Top 3 highlight */
+#scoreboard table tbody tr:nth-child(1) td:first-child {
+  color: #fbbf24 !important;
+  font-weight: 700 !important;
+}
+#scoreboard table tbody tr:nth-child(2) td:first-child {
+  color: var(--wbots-text-dim) !important;
+  font-weight: 700 !important;
+}
+#scoreboard table tbody tr:nth-child(3) td:first-child {
+  color: #cd7f32 !important;
+  font-weight: 700 !important;
+}
+
+/* ── Alerts & Notifications ── */
+.alert-success {
+  background: rgba(34, 197, 94, 0.1) !important;
+  border: 1px solid rgba(34, 197, 94, 0.3) !important;
+  color: var(--wbots-green) !important;
+}
+
+.alert-danger {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: var(--wbots-red) !important;
+}
+
+.alert-warning {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  color: var(--wbots-amber) !important;
+}
+
+.alert-info {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border: 1px solid rgba(59, 130, 246, 0.3) !important;
+  color: var(--wbots-accent) !important;
+}
+
+/* ── Badges & Tags ── */
+.badge {
+  border-radius: 20px !important;
+  font-weight: 600 !important;
+  padding: 4px 10px !important;
+}
+
+.badge-primary {
+  background: var(--wbots-accent) !important;
+}
+
+.badge-success {
+  background: var(--wbots-green) !important;
+}
+
+/* Challenge category tags */
+.category-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* ── Footer ── */
+footer, .footer {
+  background: var(--wbots-bg-card) !important;
+  border-top: 1px solid var(--wbots-border) !important;
+  color: var(--wbots-text-dim) !important;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--wbots-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--wbots-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--wbots-accent);
+}
+
+/* ── Selection ── */
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: #fff;
+}
+
+/* ── Modal ── */
+.modal-backdrop {
+  background: rgba(10, 14, 23, 0.8) !important;
+}
+
+/* ── Code blocks ── */
+code, pre {
+  background: var(--wbots-bg) !important;
+  color: var(--wbots-accent2) !important;
+  border: 1px solid var(--wbots-border) !important;
+  border-radius: 6px !important;
+  font-family: 'SF Mono', 'Cascadia Code', monospace !important;
+}
+
+/* ── Pagination ── */
+.page-link {
+  background: var(--wbots-bg-card) !important;
+  border-color: var(--wbots-border) !important;
+  color: var(--wbots-text-dim) !important;
+}
+
+.page-link:hover, .page-item.active .page-link {
+  background: var(--wbots-accent) !important;
+  border-color: var(--wbots-accent) !important;
+  color: #fff !important;
+}
+
+/* ── Solve animation ── */
+@keyframes wbots-solve {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(34, 197, 94, 0.3); }
+  100% { transform: scale(1); }
+}
+
+.challenge-solved {
+  animation: wbots-solve 0.5s ease !important;
+  border-color: var(--wbots-green) !important;
+  opacity: 0.7 !important;
+}
+
+/* ── Hint styling ── */
+.hint-button {
+  background: var(--wbots-bg-card2) !important;
+  border: 1px solid var(--wbots-amber) !important;
+  border-radius: 8px !important;
+  color: var(--wbots-amber) !important;
+}
+
+/* ── Charts/Graphs ── */
+.ct-series-a .ct-line, .ct-series-a .ct-point {
+  stroke: var(--wbots-accent) !important;
+}
+
+.ct-series-b .ct-line, .ct-series-b .ct-point {
+  stroke: var(--wbots-accent2) !important;
+}
+
+.ct-grid {
+  stroke: var(--wbots-border) !important;
+}
+
+.ct-label {
+  color: var(--wbots-text-dim) !important;
+  fill: var(--wbots-text-dim) !important;
+}

@@ -1,0 +1,139 @@
+{
+  "hint_configuration": {
+    "version": "1.0",
+    "description": "WazuhBOTS CTF hint cost configuration. Defines hint pricing by difficulty level with a progressive hint system allowing up to 3 hints per challenge.",
+    "progressive_system": {
+      "enabled": true,
+      "max_hints_per_challenge": 3,
+      "unlock_behavior": "sequential",
+      "description": "Hints are unlocked sequentially. Hint 2 cannot be purchased until Hint 1 is revealed. Each subsequent hint is more specific and costly."
+    }
+  },
+  "levels": {
+    "pup": {
+      "display_name": "Pup",
+      "challenge_points": 100,
+      "hint_costs": {
+        "hint_1": {
+          "cost": 25,
+          "cost_percentage": "25%",
+          "description": "General guidance - points to the right Wazuh Dashboard area, filter, or field to investigate"
+        },
+        "hint_2": {
+          "cost": 25,
+          "cost_percentage": "25%",
+          "description": "Specific direction - provides the exact filter query, field name, or time range to use"
+        },
+        "hint_3": {
+          "cost": 25,
+          "cost_percentage": "25%",
+          "description": "Near answer - narrows the answer to a very small range or gives the format/pattern"
+        }
+      },
+      "total_max_hint_cost": 75,
+      "minimum_points_after_hints": 25,
+      "hint_philosophy": "Pup hints teach dashboard navigation skills. They progressively guide analysts to the correct location, filter, and field in the Wazuh Dashboard."
+    },
+    "hunter": {
+      "display_name": "Hunter",
+      "challenge_points": 200,
+      "hint_costs": {
+        "hint_1": {
+          "cost": 50,
+          "cost_percentage": "25%",
+          "description": "Investigation direction - identifies the log source, rule group, or event type to focus on"
+        },
+        "hint_2": {
+          "cost": 50,
+          "cost_percentage": "25%",
+          "description": "Correlation guidance - provides specific field names, event IDs, or correlation logic"
+        },
+        "hint_3": {
+          "cost": 50,
+          "cost_percentage": "25%",
+          "description": "Answer framing - gives the answer format, tool name category, or specific event details"
+        }
+      },
+      "total_max_hint_cost": 150,
+      "minimum_points_after_hints": 50,
+      "hint_philosophy": "Hunter hints develop event correlation skills. They guide analysts through the process of connecting multiple data sources and identifying attack patterns."
+    },
+    "alpha": {
+      "display_name": "Alpha",
+      "challenge_points": 300,
+      "hint_costs": {
+        "hint_1": {
+          "cost": 75,
+          "cost_percentage": "25%",
+          "description": "Methodology hint - suggests the analytical approach, framework reference, or detection strategy"
+        },
+        "hint_2": {
+          "cost": 75,
+          "cost_percentage": "25%",
+          "description": "Technical detail - provides specific MITRE IDs, rule syntax elements, or forensic artifact locations"
+        },
+        "hint_3": {
+          "cost": 75,
+          "cost_percentage": "25%",
+          "description": "Deep guidance - offers the specific configuration, command syntax, or artifact value with context"
+        }
+      },
+      "total_max_hint_cost": 225,
+      "minimum_points_after_hints": 75,
+      "hint_philosophy": "Alpha hints develop threat hunting and forensic analysis skills. They guide analysts through advanced techniques including rule creation, MITRE mapping, and evidence correlation."
+    },
+    "fenrir": {
+      "display_name": "Fenrir",
+      "challenge_points": 500,
+      "hint_costs": {
+        "hint_1": {
+          "cost": 100,
+          "cost_percentage": "20%",
+          "description": "Strategic hint - identifies the class of technique, evasion category, or investigation methodology required"
+        },
+        "hint_2": {
+          "cost": 100,
+          "cost_percentage": "20%",
+          "description": "Tactical hint - provides specific technical details about the evasion mechanism, correlation approach, or reconstruction method"
+        },
+        "hint_3": {
+          "cost": 100,
+          "cost_percentage": "20%",
+          "description": "Operational hint - gives detailed specifics including exact values, paths, or formatted components of the answer"
+        }
+      },
+      "total_max_hint_cost": 300,
+      "minimum_points_after_hints": 200,
+      "hint_philosophy": "Fenrir hints are expensive but comprehensive. They are designed for expert-level challenges involving multi-vector analysis, evasion detection, and complete incident reconstruction."
+    }
+  },
+  "mode_overrides": {
+    "training_mode": {
+      "description": "All hints are free in training mode. Used for SOC onboarding and guided exercises.",
+      "hint_cost_multiplier": 0,
+      "all_hints_free": true
+    },
+    "competition_mode": {
+      "description": "Standard hint costs apply. Used for CTF events and meetups.",
+      "hint_cost_multiplier": 1.0,
+      "all_hints_free": false
+    },
+    "guided_mode": {
+      "description": "Hints cost 50% of normal price. Used for self-guided learning.",
+      "hint_cost_multiplier": 0.5,
+      "all_hints_free": false
+    },
+    "hardcore_mode": {
+      "description": "Hints cost 150% of normal price. Used for advanced competitions.",
+      "hint_cost_multiplier": 1.5,
+      "all_hints_free": false
+    }
+  },
+  "ctfd_import_settings": {
+    "hint_type": "standard",
+    "prerequisites": true,
+    "prerequisite_behavior": "Hints must be unlocked in order (hint_1 before hint_2, hint_2 before hint_3)",
+    "refund_on_wrong_attempt": false,
+    "hint_visibility": "unlocked_only"
+  }
+}

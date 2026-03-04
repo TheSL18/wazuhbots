@@ -1,0 +1,481 @@
+<!--
+  WazuhBOTS - Custom Local Rules
+  ================================
+  Rule ID ranges:
+    87900-87909  SQL Injection detection
+    87910-87919  SSH brute force correlation
+    87920-87929  Web shell / FIM-based detection
+    87930-87939  Suspicious process execution
+    87940-87949  Privilege escalation indicators
+    87950-87959  C2 beaconing patterns
+    87960-87969  Log tampering detection
+    87970-87979  Reserved / future use
+
+  Level scale reference:
+    3  - Informational
+    5  - Low severity / policy violation
+    7  - Medium severity / suspicious activity
+    10 - High severity / attack detected
+    12 - Critical / confirmed compromise
+    15 - Maximum / emergency (active breach)
+-->
+<group name="wazuhbots,">
+
+  <!-- ============================================================ -->
+  <!--  SQL INJECTION DETECTION (87900-87909)                       -->
+  <!--  MITRE ATT&CK: T1190 (Exploit Public-Facing Application)    -->
+  <!-- ============================================================ -->
+
+  <!-- Basic SQLi keywords in web request URI or body -->
+  <rule id="87900" level="7">
+    <if_group>web|accesslog|attack</if_group>
+    <url type="pcre2">(?i)(\bunion\b.*\bselect\b|\bselect\b.*\bfrom\b.*\bwhere\b)</url>
+    <description>SQL Injection: UNION SELECT or SELECT FROM WHERE pattern detected in URL.</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+    <group>sql_injection,web,attack,pci_dss_6.5.1,</group>
+  </rule>
+
+  <!-- SQLi with comment-based evasion: --, #, /* */  -->
+  <rule id="87901" level="10">
+    <if_sid>87900</if_sid>
+    <url type="pcre2">(?i)(--|#|\/\*.*\*\/|%27|%22|0x[0-9a-f]+)</url>
+    <description>SQL Injection: Evasion techniques detected (comments, hex encoding, quote encoding).</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+    <group>sql_injection,web,attack,pci_dss_6.5.1,</group>
+  </rule>
+
+  <!-- SQLi with dangerous functions: SLEEP, BENCHMARK, LOAD_FILE, INTO OUTFILE -->
+  <rule id="87902" level="12">
+    <if_group>web|accesslog|attack</if_group>
+    <url type="pcre2">(?i)(\bsleep\s*\(|\bbenchmark\s*\(|\bload_file\s*\(|\binto\s+(out|dump)file\b)</url>
+    <description>SQL Injection: Time-based or file-access SQL function detected (SLEEP, BENCHMARK, LOAD_FILE, OUTFILE).</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+    <group>sql_injection,web,attack,pci_dss_6.5.1,</group>
+  </rule>
+
+  <!-- SQLi stacked queries -->
+  <rule id="87903" level="12">
+    <if_group>web|accesslog|attack</if_group>
+    <url type="pcre2">(?i)(;\s*(drop|alter|create|insert|update|delete|truncate)\s)</url>
+    <description>SQL Injection: Stacked query with destructive SQL keyword detected.</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+    <group>sql_injection,web,attack,pci_dss_6.5.1,</group>
+  </rule>
+
+  <!-- SQLi error-based: extractvalue, updatexml, exp -->
+  <rule id="87904" level="10">
+    <if_group>web|accesslog|attack</if_group>
+    <url type="pcre2">(?i)(\bextractvalue\s*\(|\bupdatexml\s*\(|\bexp\s*\(.*select)</url>
+    <description>SQL Injection: Error-based injection function detected (extractvalue, updatexml).</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+    <group>sql_injection,web,attack,pci_dss_6.5.1,</group>
+  </rule>
+
+  <!-- Repeated SQLi from same source (frequency rule) -->
+  <rule id="87905" level="12" frequency="5" timeframe="60">
+    <if_matched_sid>87900</if_matched_sid>
+    <same_source_ip />
+    <description>SQL Injection: Multiple SQLi attempts from the same source in 60 seconds - active attack.</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+    <group>sql_injection,web,attack,pci_dss_6.5.1,pci_dss_11.4,</group>
+  </rule>
+
+  <!-- ============================================================ -->
+  <!--  SSH BRUTE FORCE CORRELATION (87910-87919)                   -->
+  <!--  MITRE ATT&CK: T1110 (Brute Force), T1078 (Valid Accounts)  -->
+  <!-- ============================================================ -->
+
+  <!-- SSH brute force: 8 failed attempts in 120 seconds -->
+  <rule id="87910" level="10" frequency="8" timeframe="120" ignore="60">
+    <if_matched_sid>5710</if_matched_sid>
+    <same_source_ip />
+    <description>SSH Brute Force: 8+ failed SSH login attempts from same source in 2 minutes.</description>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+    <group>brute_force,authentication_failures,ssh,pci_dss_10.2.4,pci_dss_11.4,</group>
+  </rule>
+
+  <!-- SSH brute force escalation: 20 failures in 5 minutes -->
+  <rule id="87911" level="12" frequency="20" timeframe="300">
+    <if_matched_sid>5710</if_matched_sid>
+    <same_source_ip />
+    <description>SSH Brute Force: Aggressive attack - 20+ failed SSH attempts from same source in 5 minutes.</description>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+    <group>brute_force,authentication_failures,ssh,pci_dss_10.2.4,pci_dss_11.4,</group>
+  </rule>
+
+  <!-- SSH successful login after brute force -->
+  <rule id="87912" level="13">
+    <if_matched_sid>87910</if_matched_sid>
+    <if_sid>5715</if_sid>
+    <same_source_ip />
+    <description>SSH Brute Force SUCCESS: Successful SSH login detected from an IP that was previously brute forcing.</description>
+    <mitre>
+      <id>T1110</id>
+      <id>T1078</id>
+    </mitre>
+    <group>brute_force,authentication_success,ssh,pci_dss_10.2.4,</group>
+  </rule>
+
+  <!-- SSH login from unusual source (non-RFC1918) -->
+  <rule id="87913" level="7">
+    <if_sid>5715</if_sid>
+    <srcip type="pcre2">^(?!10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|127\.).*$</srcip>
+    <description>SSH Login: Successful SSH login from a non-private (external) IP address.</description>
+    <mitre>
+      <id>T1078</id>
+    </mitre>
+    <group>authentication_success,ssh,</group>
+  </rule>
+
+  <!-- SSH login as root -->
+  <rule id="87914" level="10">
+    <if_sid>5715</if_sid>
+    <user>root</user>
+    <description>SSH Login: Direct root login via SSH detected.</description>
+    <mitre>
+      <id>T1078.003</id>
+    </mitre>
+    <group>authentication_success,ssh,policy_violation,pci_dss_10.2.5,</group>
+  </rule>
+
+  <!-- ============================================================ -->
+  <!--  WEB SHELL DETECTION VIA FIM (87920-87929)                   -->
+  <!--  MITRE ATT&CK: T1505.003 (Web Shell)                        -->
+  <!-- ============================================================ -->
+
+  <!-- New file created in web directory -->
+  <rule id="87920" level="10">
+    <if_sid>554</if_sid>
+    <field name="file" type="pcre2">(?i)\.(php|jsp|asp|aspx|cgi|py|pl|sh|war)$</field>
+    <field name="file" type="pcre2">(?i)(\/var\/www|\/opt\/webapp|\/srv\/http|htdocs|wwwroot)</field>
+    <description>Web Shell Suspect: New executable file created in web server directory.</description>
+    <mitre>
+      <id>T1505.003</id>
+    </mitre>
+    <group>web_shell,fim,syscheck,pci_dss_11.5,</group>
+  </rule>
+
+  <!-- Modified file in web directory with suspicious content keywords -->
+  <rule id="87921" level="12">
+    <if_sid>550</if_sid>
+    <field name="file" type="pcre2">(?i)\.(php|jsp|asp|aspx)$</field>
+    <field name="changed_content" type="pcre2">(?i)(eval\s*\(|base64_decode|system\s*\(|exec\s*\(|passthru|shell_exec|proc_open|popen)</field>
+    <description>Web Shell Confirmed: File in web directory modified with shell execution functions.</description>
+    <mitre>
+      <id>T1505.003</id>
+    </mitre>
+    <group>web_shell,fim,syscheck,pci_dss_11.5,</group>
+  </rule>
+
+  <!-- File with suspicious name pattern in web directory -->
+  <rule id="87922" level="10">
+    <if_sid>554</if_sid>
+    <field name="file" type="pcre2">(?i)(c99|r57|b374k|weevely|wso|alfa|mini.*shell|cmd\.(php|asp|jsp)|backdoor|pwn)</field>
+    <description>Web Shell Suspect: File with known web shell name pattern detected.</description>
+    <mitre>
+      <id>T1505.003</id>
+    </mitre>
+    <group>web_shell,fim,syscheck,pci_dss_11.5,</group>
+  </rule>
+
+  <!-- Obfuscated PHP file detected -->
+  <rule id="87923" level="12">
+    <if_sid>550,554</if_sid>
+    <field name="file" type="pcre2">(?i)\.php$</field>
+    <field name="changed_content" type="pcre2">(?i)(chr\s*\(\s*\d+\s*\).*chr\s*\(\s*\d+\s*\)|\\x[0-9a-f]{2}.*\\x[0-9a-f]{2}|gzinflate\s*\(|str_rot13\s*\(|gzuncompress)</field>
+    <description>Web Shell Obfuscated: PHP file with heavy obfuscation patterns (chr, hex, gzinflate, str_rot13).</description>
+    <mitre>
+      <id>T1505.003</id>
+      <id>T1027</id>
+    </mitre>
+    <group>web_shell,fim,obfuscation,syscheck,</group>
+  </rule>
+
+  <!-- ============================================================ -->
+  <!--  SUSPICIOUS PROCESS EXECUTION (87930-87939)                  -->
+  <!--  MITRE ATT&CK: T1059 (Command and Scripting Interpreter)    -->
+  <!-- ============================================================ -->
+
+  <!-- Reverse shell patterns -->
+  <rule id="87930" level="15">
+    <if_group>syslog|audit|syscheck</if_group>
+    <match type="pcre2">(?i)(bash\s+-i\s+>&|\/dev\/tcp\/|nc\s+-[elp]|ncat\s+-[elp]|python.*socket.*connect|perl.*socket.*INET|ruby.*TCPSocket|php\s+-r.*fsockopen|mkfifo.*\/tmp.*nc)</match>
+    <description>Reverse Shell: Command pattern consistent with reverse shell execution detected.</description>
+    <mitre>
+      <id>T1059</id>
+      <id>T1071.001</id>
+    </mitre>
+    <group>exploit,reverse_shell,pci_dss_10.6.1,</group>
+  </rule>
+
+  <!-- Suspicious use of wget/curl to download and execute -->
+  <rule id="87931" level="12">
+    <if_group>syslog|audit</if_group>
+    <match type="pcre2">(?i)((wget|curl)\s+.*\|\s*(bash|sh|python|perl|ruby)|(wget|curl)\s+.*-O\s+\/tmp\/)</match>
+    <description>Suspicious Download: wget/curl piped to interpreter or saving to /tmp.</description>
+    <mitre>
+      <id>T1059</id>
+      <id>T1105</id>
+    </mitre>
+    <group>exploit,suspicious_process,pci_dss_10.6.1,</group>
+  </rule>
+
+  <!-- Encoded command execution (base64) -->
+  <rule id="87932" level="12">
+    <if_group>syslog|audit</if_group>
+    <match type="pcre2">(?i)(echo\s+[A-Za-z0-9+/=]{20,}\s*\|\s*base64\s+-d|base64\s+-d.*\|\s*(bash|sh)|python.*-c.*exec.*decode)</match>
+    <description>Encoded Execution: Base64-encoded command execution detected.</description>
+    <mitre>
+      <id>T1059</id>
+      <id>T1027</id>
+    </mitre>
+    <group>exploit,obfuscation,suspicious_process,</group>
+  </rule>
+
+  <!-- Process spawned from web server user -->
+  <rule id="87933" level="10">
+    <if_group>audit</if_group>
+    <field name="audit.euid">www-data|apache|nginx|httpd|nobody</field>
+    <match type="pcre2">(?i)(\/bin\/(bash|sh|dash|zsh)|python|perl|ruby|gcc|make|wget|curl|nc|ncat|socat)</match>
+    <description>Web Server Process: Suspicious child process spawned by web server user.</description>
+    <mitre>
+      <id>T1059</id>
+      <id>T1505.003</id>
+    </mitre>
+    <group>exploit,web_shell,suspicious_process,</group>
+  </rule>
+
+  <!-- Crontab modification detected -->
+  <rule id="87934" level="10">
+    <if_group>syslog|audit|syscheck</if_group>
+    <match type="pcre2">(?i)(crontab\s+-[erl]|\/etc\/cron\.|\/var\/spool\/cron)</match>
+    <description>Persistence: Crontab modification or scheduled task change detected.</description>
+    <mitre>
+      <id>T1053.003</id>
+    </mitre>
+    <group>persistence,suspicious_process,pci_dss_10.2.7,</group>
+  </rule>
+
+  <!-- Compiler or build tool on production system -->
+  <rule id="87935" level="7">
+    <if_group>audit</if_group>
+    <match type="pcre2">(\/usr\/bin\/(gcc|g\+\+|cc|make|as|ld)|\/usr\/bin\/python.*setup\.py)</match>
+    <description>Suspicious Tool: Compiler or build tool executed on system.</description>
+    <mitre>
+      <id>T1027.004</id>
+    </mitre>
+    <group>suspicious_process,policy_violation,</group>
+  </rule>
+
+  <!-- ============================================================ -->
+  <!--  PRIVILEGE ESCALATION INDICATORS (87940-87949)               -->
+  <!--  MITRE ATT&CK: T1548 (Abuse Elevation Control Mechanism)    -->
+  <!-- ============================================================ -->
+
+  <!-- SUID/SGID binary created or modified -->
+  <rule id="87940" level="12">
+    <if_sid>550,554</if_sid>
+    <field name="perm" type="pcre2">[46]</field>
+    <field name="file" type="pcre2">(?i)(\/usr\/bin|\/usr\/sbin|\/usr\/local\/bin|\/tmp|\/var\/tmp|\/dev\/shm)</field>
+    <description>Privilege Escalation: SUID/SGID file created or modified in monitored directory.</description>
+    <mitre>
+      <id>T1548.001</id>
+    </mitre>
+    <group>privilege_escalation,syscheck,pci_dss_10.2.7,</group>
+  </rule>
+
+  <!-- Sudo misconfiguration exploitation -->
+  <rule id="87941" level="12">
+    <if_group>syslog|audit</if_group>
+    <match type="pcre2">(?i)(sudo\s+.*NOPASSWD|sudo\s+-u\s*#-1|sudo\s+\/usr\/bin\/(vi|vim|nano|less|more|man|find|nmap|python|perl|ruby|awk|env))</match>
+    <description>Privilege Escalation: Potential sudo abuse for privilege escalation (GTFOBins pattern).</description>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+    <group>privilege_escalation,sudo,pci_dss_10.2.5,</group>
+  </rule>
+
+  <!-- /etc/passwd or /etc/shadow modification -->
+  <rule id="87942" level="15">
+    <if_sid>550</if_sid>
+    <field name="file" type="pcre2">(?i)(\/etc\/passwd|\/etc\/shadow|\/etc\/sudoers)</field>
+    <description>Privilege Escalation: Critical authentication file modified (passwd, shadow, or sudoers).</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <group>privilege_escalation,account_manipulation,syscheck,pci_dss_10.2.5,</group>
+  </rule>
+
+  <!-- Kernel module loading -->
+  <rule id="87943" level="12">
+    <if_group>syslog|audit</if_group>
+    <match type="pcre2">(?i)(insmod\s+|modprobe\s+|\/sbin\/insmod|init_module|finit_module)</match>
+    <description>Privilege Escalation: Kernel module loading detected - possible rootkit installation.</description>
+    <mitre>
+      <id>T1547.006</id>
+    </mitre>
+    <group>privilege_escalation,rootkit,pci_dss_10.2.7,</group>
+  </rule>
+
+  <!-- Container escape indicators -->
+  <rule id="87944" level="15">
+    <if_group>syslog|audit</if_group>
+    <match type="pcre2">(?i)(nsenter\s+|unshare\s+.*mount|mount\s+.*proc|capsh\s+|\/proc\/1\/root|docker\.sock)</match>
+    <description>Container Escape: Indicators of container breakout or namespace manipulation detected.</description>
+    <mitre>
+      <id>T1611</id>
+    </mitre>
+    <group>privilege_escalation,container_escape,</group>
+  </rule>
+
+  <!-- ============================================================ -->
+  <!--  C2 BEACONING PATTERNS (87950-87959)                         -->
+  <!--  MITRE ATT&CK: T1071 (Application Layer Protocol)           -->
+  <!-- ============================================================ -->
+
+  <!-- DNS-based C2 indicators: long subdomain labels or high query volume -->
+  <rule id="87950" level="10">
+    <if_group>syslog|dns</if_group>
+    <match type="pcre2">(?i)(query\[.*\]\s+[a-z0-9]{30,}\.|dns.*[a-z0-9]{30,}\.)</match>
+    <description>C2 Beaconing: Abnormally long DNS subdomain label - possible DNS tunneling or C2.</description>
+    <mitre>
+      <id>T1071.004</id>
+    </mitre>
+    <group>c2,beaconing,dns_tunnel,</group>
+  </rule>
+
+  <!-- High frequency DNS queries to same domain -->
+  <rule id="87951" level="10" frequency="30" timeframe="300">
+    <if_matched_group>dns</if_matched_group>
+    <same_field>query_name</same_field>
+    <description>C2 Beaconing: High-frequency DNS queries to the same domain (30+ in 5 min).</description>
+    <mitre>
+      <id>T1071.004</id>
+    </mitre>
+    <group>c2,beaconing,dns_tunnel,</group>
+  </rule>
+
+  <!-- HTTP beaconing to known bad user agents -->
+  <rule id="87952" level="10">
+    <if_group>web|accesslog</if_group>
+    <match type="pcre2">(?i)(python-requests|powershell|wget\/|curl\/|go-http-client|java\/|winhttp|msie\s+[45]\.|empire|cobalt|meterpreter|havoc|sliver)</match>
+    <description>C2 Beaconing: HTTP request with suspicious or known C2 framework user-agent.</description>
+    <mitre>
+      <id>T1071.001</id>
+    </mitre>
+    <group>c2,beaconing,suspicious_user_agent,</group>
+  </rule>
+
+  <!-- Regular interval HTTP connections (beaconing pattern) -->
+  <rule id="87953" level="10" frequency="10" timeframe="600">
+    <if_matched_group>web|accesslog</if_matched_group>
+    <same_source_ip />
+    <same_url />
+    <description>C2 Beaconing: Repeated HTTP requests to the same URL from same source - regular beacon interval detected.</description>
+    <mitre>
+      <id>T1071.001</id>
+      <id>T1573</id>
+    </mitre>
+    <group>c2,beaconing,</group>
+  </rule>
+
+  <!-- Outbound connection to non-standard port -->
+  <rule id="87954" level="7">
+    <if_group>firewall|syslog</if_group>
+    <match type="pcre2">(?i)(dst(port)?[=:\s]+(4444|5555|6666|7777|8888|9999|1234|31337|12345|54321))</match>
+    <description>C2 Suspect: Outbound connection to commonly used C2 port detected.</description>
+    <mitre>
+      <id>T1571</id>
+    </mitre>
+    <group>c2,beaconing,non_standard_port,</group>
+  </rule>
+
+  <!-- ============================================================ -->
+  <!--  LOG TAMPERING DETECTION (87960-87969)                       -->
+  <!--  MITRE ATT&CK: T1070 (Indicator Removal)                    -->
+  <!-- ============================================================ -->
+
+  <!-- Auth log cleared or truncated -->
+  <rule id="87960" level="15">
+    <if_sid>550</if_sid>
+    <field name="file" type="pcre2">(?i)(\/var\/log\/(auth|secure|syslog|messages|kern|audit\/audit)\.log)</field>
+    <field name="size" type="pcre2">^0$</field>
+    <description>Log Tampering: Critical log file has been truncated to zero bytes.</description>
+    <mitre>
+      <id>T1070.002</id>
+    </mitre>
+    <group>log_tampering,anti_forensics,syscheck,pci_dss_10.5.2,</group>
+  </rule>
+
+  <!-- Log file deleted -->
+  <rule id="87961" level="15">
+    <if_sid>553</if_sid>
+    <field name="file" type="pcre2">(?i)(\/var\/log\/|\.log$|\.log\.\d+$)</field>
+    <description>Log Tampering: Log file has been deleted.</description>
+    <mitre>
+      <id>T1070.002</id>
+    </mitre>
+    <group>log_tampering,anti_forensics,syscheck,pci_dss_10.5.2,</group>
+  </rule>
+
+  <!-- History file clearing -->
+  <rule id="87962" level="12">
+    <if_group>syslog|audit</if_group>
+    <match type="pcre2">(?i)(history\s+-c|>\s*~/\.bash_history|>\s*~\/\.(zsh_history|sh_history)|unset\s+HISTFILE|HISTSIZE=0|shred.*history|rm.*\.bash_history)</match>
+    <description>Log Tampering: Shell history clearing command detected.</description>
+    <mitre>
+      <id>T1070.003</id>
+    </mitre>
+    <group>log_tampering,anti_forensics,pci_dss_10.5.2,</group>
+  </rule>
+
+  <!-- Timestamp manipulation (timestomp) -->
+  <rule id="87963" level="12">
+    <if_group>syslog|audit</if_group>
+    <match type="pcre2">(?i)(touch\s+-[dr]|touch\s+--date|touch\s+--reference|timestomp|SetFileTime)</match>
+    <description>Log Tampering: Timestamp manipulation (timestomping) command detected.</description>
+    <mitre>
+      <id>T1070.006</id>
+    </mitre>
+    <group>log_tampering,anti_forensics,timestomp,</group>
+  </rule>
+
+  <!-- Auditd stopped or disabled -->
+  <rule id="87964" level="12">
+    <if_group>syslog|audit</if_group>
+    <match type="pcre2">(?i)(service\s+auditd\s+stop|systemctl\s+stop\s+auditd|auditctl\s+-e\s*0|auditctl\s+-D)</match>
+    <description>Log Tampering: Audit daemon stopped or audit rules cleared.</description>
+    <mitre>
+      <id>T1562.001</id>
+    </mitre>
+    <group>log_tampering,defense_evasion,anti_forensics,</group>
+  </rule>
+
+  <!-- Syslog daemon killed -->
+  <rule id="87965" level="12">
+    <if_group>syslog|audit</if_group>
+    <match type="pcre2">(?i)(kill.*syslog|kill.*rsyslog|systemctl\s+stop\s+rsyslog|service\s+rsyslog\s+stop)</match>
+    <description>Log Tampering: Syslog service terminated - defense evasion indicator.</description>
+    <mitre>
+      <id>T1562.001</id>
+    </mitre>
+    <group>log_tampering,defense_evasion,anti_forensics,</group>
+  </rule>
+
+</group>

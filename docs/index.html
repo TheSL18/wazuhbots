@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WazuhBOTS — Boss of the SOC</title>
+<style>
+/* ================================================================
+   RESET & BASE
+   ================================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:        #0a0e17;
+  --bg-card:   #111827;
+  --bg-card2:  #1a2236;
+  --border:    #1e293b;
+  --text:      #e2e8f0;
+  --text-dim:  #94a3b8;
+  --accent:    #3b82f6;
+  --accent2:   #06b6d4;
+  --green:     #22c55e;
+  --amber:     #f59e0b;
+  --red:       #ef4444;
+  --purple:    #a855f7;
+  --pup:       #22c55e;
+  --hunter:    #3b82f6;
+  --alpha:     #f59e0b;
+  --fenrir:    #ef4444;
+  --radius:    12px;
+  --glow:      0 0 40px rgba(59,130,246,.15);
+}
+html{scroll-behavior:smooth;font-size:16px}
+body{
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  background:var(--bg);color:var(--text);
+  line-height:1.6;overflow-x:hidden;
+}
+a{color:var(--accent);text-decoration:none;transition:color .2s}
+a:hover{color:var(--accent2)}
+
+/* ================================================================
+   LAYOUT
+   ================================================================ */
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+section{padding:80px 0}
+.section-label{
+  text-transform:uppercase;font-size:.75rem;letter-spacing:3px;
+  color:var(--accent);font-weight:700;margin-bottom:8px;
+}
+.section-title{
+  font-size:2.2rem;font-weight:800;margin-bottom:16px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.section-subtitle{color:var(--text-dim);font-size:1.1rem;max-width:680px}
+
+/* ================================================================
+   HERO
+   ================================================================ */
+.hero{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  text-align:center;position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 600px 400px at 30% 20%, rgba(59,130,246,.12) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 350px at 70% 70%, rgba(6,182,212,.08) 0%, transparent 70%);
+  pointer-events:none;
+}
+.hero-grid{
+  position:absolute;inset:0;opacity:.04;
+  background-image:
+    linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 50%, black, transparent);
+}
+.hero-content{position:relative;z-index:1}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);
+  border-radius:99px;padding:6px 18px;font-size:.8rem;color:var(--accent);
+  font-weight:600;margin-bottom:24px;
+}
+.hero-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero h1{
+  font-size:clamp(2.5rem,6vw,4.5rem);font-weight:900;
+  line-height:1.1;margin-bottom:12px;letter-spacing:-1px;
+}
+.hero h1 .gradient{
+  background:linear-gradient(135deg,var(--accent),var(--accent2),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero .tagline{
+  font-size:clamp(1rem,2.5vw,1.35rem);color:var(--text-dim);
+  max-width:640px;margin:0 auto 40px;
+}
+.hero-stats{
+  display:flex;gap:32px;justify-content:center;flex-wrap:wrap;margin-bottom:40px;
+}
+.hero-stat{text-align:center}
+.hero-stat .num{
+  font-size:2rem;font-weight:800;display:block;
+  background:linear-gradient(135deg,#fff,var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-stat .lbl{font-size:.75rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px}
+.hero-actions{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 28px;border-radius:8px;font-weight:600;font-size:.95rem;
+  transition:all .25s;cursor:pointer;border:none;
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--accent),#2563eb);color:#fff;
+  box-shadow:0 4px 20px rgba(59,130,246,.35);
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 30px rgba(59,130,246,.45)}
+.btn-secondary{
+  background:var(--bg-card);color:var(--text);
+  border:1px solid var(--border);
+}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ================================================================
+   SCENARIOS
+   ================================================================ */
+.scenarios-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+  gap:20px;margin-top:40px;
+}
+.scenario-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:28px;
+  transition:all .3s;position:relative;overflow:hidden;
+}
+.scenario-card:hover{
+  border-color:var(--accent);transform:translateY(-4px);
+  box-shadow:var(--glow);
+}
+.scenario-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  opacity:0;transition:opacity .3s;
+}
+.scenario-card:hover::before{opacity:1}
+.scenario-num{
+  font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;
+  color:var(--accent);margin-bottom:8px;
+}
+.scenario-card h3{font-size:1.2rem;font-weight:700;margin-bottom:8px}
+.scenario-card .desc{font-size:.88rem;color:var(--text-dim);margin-bottom:16px;line-height:1.5}
+.scenario-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.tag{
+  font-size:.7rem;padding:3px 10px;border-radius:99px;font-weight:600;
+  background:rgba(59,130,246,.1);color:var(--accent);border:1px solid rgba(59,130,246,.2);
+}
+.scenario-meta{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  font-size:.8rem;color:var(--text-dim);
+}
+.scenario-meta span{display:flex;align-items:center;gap:6px}
+.scenario-meta .val{color:var(--text);font-weight:600}
+
+/* ================================================================
+   DIFFICULTY LEVELS
+   ================================================================ */
+.levels-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:20px;margin-top:40px;
+}
+.level-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:28px;text-align:center;
+  transition:all .3s;
+}
+.level-card:hover{transform:translateY(-4px);box-shadow:var(--glow)}
+.level-icon{font-size:2.5rem;margin-bottom:12px;display:block}
+.level-card h3{font-size:1.3rem;font-weight:700;margin-bottom:4px}
+.level-pts{font-size:.85rem;font-weight:700;margin-bottom:12px}
+.level-card.pup    .level-pts{color:var(--pup)}
+.level-card.hunter .level-pts{color:var(--hunter)}
+.level-card.alpha  .level-pts{color:var(--alpha)}
+.level-card.fenrir .level-pts{color:var(--fenrir)}
+.level-card.pup    {border-top:3px solid var(--pup)}
+.level-card.hunter {border-top:3px solid var(--hunter)}
+.level-card.alpha  {border-top:3px solid var(--alpha)}
+.level-card.fenrir {border-top:3px solid var(--fenrir)}
+.level-desc{font-size:.85rem;color:var(--text-dim);line-height:1.5}
+.level-count{
+  margin-top:16px;font-size:1.6rem;font-weight:800;
+}
+.level-card.pup    .level-count{color:var(--pup)}
+.level-card.hunter .level-count{color:var(--hunter)}
+.level-card.alpha  .level-count{color:var(--alpha)}
+.level-card.fenrir .level-count{color:var(--fenrir)}
+
+/* ================================================================
+   COMPARISON
+   ================================================================ */
+.comparison{background:var(--bg-card2)}
+.comparison-table{
+  width:100%;border-collapse:separate;border-spacing:0;
+  margin-top:40px;border-radius:var(--radius);overflow:hidden;
+  border:1px solid var(--border);
+}
+.comparison-table th,.comparison-table td{
+  padding:14px 20px;text-align:left;
+  border-bottom:1px solid var(--border);
+}
+.comparison-table th{
+  background:rgba(59,130,246,.08);font-size:.75rem;
+  text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);
+  font-weight:700;
+}
+.comparison-table td{font-size:.92rem}
+.comparison-table tr:last-child td{border-bottom:none}
+.comparison-table .highlight{
+  color:var(--green);font-weight:700;
+}
+.comparison-table .winner{
+  background:rgba(34,197,94,.06);
+}
+.crown{font-size:.85rem;margin-left:4px}
+
+/* ================================================================
+   ARCHITECTURE
+   ================================================================ */
+.arch-diagram{
+  margin-top:40px;display:flex;flex-direction:column;gap:20px;
+}
+.arch-layer{
+  display:flex;gap:16px;align-items:stretch;flex-wrap:wrap;
+  justify-content:center;
+}
+.arch-box{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px 24px;
+  text-align:center;min-width:180px;flex:1;max-width:280px;
+  transition:all .3s;
+}
+.arch-box:hover{border-color:var(--accent);box-shadow:var(--glow)}
+.arch-box .icon{font-size:1.8rem;margin-bottom:8px;display:block}
+.arch-box h4{font-size:.95rem;font-weight:700;margin-bottom:4px}
+.arch-box p{font-size:.78rem;color:var(--text-dim)}
+.arch-arrow{
+  text-align:center;color:var(--text-dim);font-size:1.5rem;
+  opacity:.4;line-height:1;
+}
+.arch-label{
+  text-align:center;font-size:.7rem;text-transform:uppercase;
+  letter-spacing:2px;color:var(--accent);font-weight:700;
+  margin-bottom:8px;
+}
+
+/* ================================================================
+   FEATURES
+   ================================================================ */
+.features-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:20px;margin-top:40px;
+}
+.feature{
+  display:flex;gap:16px;padding:24px;
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);transition:all .3s;
+}
+.feature:hover{border-color:var(--accent)}
+.feature-icon{
+  flex-shrink:0;width:44px;height:44px;
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;background:rgba(59,130,246,.1);
+}
+.feature h4{font-size:.95rem;font-weight:700;margin-bottom:4px}
+.feature p{font-size:.83rem;color:var(--text-dim);line-height:1.5}
+
+/* ================================================================
+   MITRE
+   ================================================================ */
+.mitre-grid{
+  display:flex;flex-wrap:wrap;gap:8px;margin-top:40px;
+}
+.mitre-tag{
+  padding:6px 14px;border-radius:6px;font-size:.78rem;font-weight:600;
+  font-family:'Courier New',monospace;
+  background:rgba(168,85,247,.1);color:var(--purple);
+  border:1px solid rgba(168,85,247,.2);transition:all .2s;
+}
+.mitre-tag:hover{background:rgba(168,85,247,.2);transform:scale(1.05)}
+
+/* ================================================================
+   QUICKSTART
+   ================================================================ */
+.quickstart{background:var(--bg-card2)}
+.steps{margin-top:40px;display:flex;flex-direction:column;gap:0}
+.step{
+  display:flex;gap:24px;padding:24px 0;
+  border-bottom:1px solid var(--border);
+}
+.step:last-child{border-bottom:none}
+.step-num{
+  flex-shrink:0;width:36px;height:36px;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;
+}
+.step-content h4{font-size:1rem;font-weight:700;margin-bottom:6px}
+.step-content p{font-size:.88rem;color:var(--text-dim)}
+.step-content code{
+  display:block;margin-top:10px;padding:12px 16px;
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:8px;font-family:'Courier New',monospace;
+  font-size:.82rem;color:var(--accent2);overflow-x:auto;
+  white-space:pre;
+}
+
+/* ================================================================
+   AUTHOR
+   ================================================================ */
+.author-card{
+  display:flex;gap:32px;align-items:center;
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:40px;margin-top:40px;
+  flex-wrap:wrap;justify-content:center;
+}
+.author-avatar{
+  width:120px;height:120px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:3rem;flex-shrink:0;
+}
+.author-info h3{font-size:1.4rem;font-weight:700;margin-bottom:4px}
+.author-info .role{color:var(--accent);font-weight:600;font-size:.9rem;margin-bottom:12px}
+.author-info p{color:var(--text-dim);font-size:.9rem;max-width:500px;line-height:1.6}
+.author-links{display:flex;gap:12px;margin-top:16px}
+.author-links a{
+  padding:8px 16px;border-radius:6px;font-size:.82rem;font-weight:600;
+  background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);
+  color:var(--accent);transition:all .2s;
+}
+.author-links a:hover{background:rgba(59,130,246,.2)}
+
+/* ================================================================
+   FOOTER
+   ================================================================ */
+footer{
+  text-align:center;padding:40px 24px;
+  border-top:1px solid var(--border);
+  color:var(--text-dim);font-size:.82rem;
+}
+footer .logos{
+  display:flex;gap:24px;justify-content:center;align-items:center;
+  margin-bottom:20px;opacity:.6;font-size:.9rem;font-weight:600;
+}
+footer .logos span{display:flex;align-items:center;gap:6px}
+
+/* ================================================================
+   NAV
+   ================================================================ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(10,14,23,.85);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:0 24px;transition:all .3s;
+}
+nav .nav-inner{
+  max-width:1200px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  height:56px;
+}
+nav .brand{font-weight:800;font-size:1rem;display:flex;align-items:center;gap:8px}
+nav .brand .w{
+  width:28px;height:28px;border-radius:6px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;font-weight:900;color:#fff;
+}
+nav .nav-links{display:flex;gap:24px}
+nav .nav-links a{
+  font-size:.82rem;color:var(--text-dim);font-weight:500;
+  transition:color .2s;
+}
+nav .nav-links a:hover{color:var(--text)}
+.nav-toggle{display:none;background:none;border:none;color:var(--text);font-size:1.5rem;cursor:pointer}
+
+/* ================================================================
+   SCROLL ANIMATIONS
+   ================================================================ */
+.reveal{opacity:0;transform:translateY(30px);transition:all .6s cubic-bezier(.16,1,.3,1)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* ================================================================
+   RESPONSIVE
+   ================================================================ */
+@media(max-width:768px){
+  section{padding:60px 0}
+  .hero h1{font-size:2.2rem}
+  .hero-stats{gap:20px}
+  .hero-stat .num{font-size:1.5rem}
+  .nav-links{display:none !important}
+  .nav-toggle{display:block}
+  nav.open .nav-links{
+    display:flex !important;flex-direction:column;
+    position:absolute;top:56px;left:0;right:0;
+    background:rgba(10,14,23,.97);padding:16px 24px;
+    border-bottom:1px solid var(--border);
+  }
+  .comparison-table{font-size:.82rem}
+  .comparison-table th,.comparison-table td{padding:10px 12px}
+  .author-card{text-align:center;padding:28px}
+  .author-info{display:flex;flex-direction:column;align-items:center}
+  .author-links{justify-content:center}
+  .step{gap:16px}
+  .arch-box{min-width:140px}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     NAV
+     ============================================================ -->
+<nav>
+  <div class="nav-inner">
+    <div class="brand"><span class="w">W</span> WazuhBOTS</div>
+    <button class="nav-toggle" onclick="this.closest('nav').classList.toggle('open')" aria-label="Menu">&#9776;</button>
+    <div class="nav-links">
+      <a href="#scenarios">Scenarios</a>
+      <a href="#levels">Levels</a>
+      <a href="#comparison">vs Splunk</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#quickstart">Quick Start</a>
+      <a href="https://github.com/mrhackerbot/WazuhBOTS" target="_blank">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============================================================
+     HERO
+     ============================================================ -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-badge"><span class="dot"></span> 100% Open Source</div>
+    <h1>
+      <span class="gradient">WazuhBOTS</span><br>
+      Boss of the SOC
+    </h1>
+    <p class="tagline">
+      The first open-source "Boss of the SOC" CTF built entirely on
+      <strong>Wazuh SIEM</strong>. Investigate realistic attacks, hunt threats,
+      and prove you're the top analyst.
+    </p>
+    <div class="hero-stats">
+      <div class="hero-stat"><span class="num" data-count="150">0</span><span class="lbl">Challenges</span></div>
+      <div class="hero-stat"><span class="num" data-count="4">0</span><span class="lbl">Scenarios</span></div>
+      <div class="hero-stat"><span class="num" data-count="11700">0</span><span class="lbl">Alerts</span></div>
+      <div class="hero-stat"><span class="num" data-count="39200">0</span><span class="lbl">Points</span></div>
+    </div>
+    <div class="hero-actions">
+      <a href="https://github.com/mrhackerbot/WazuhBOTS" target="_blank" class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        View on GitHub
+      </a>
+      <a href="#quickstart" class="btn btn-secondary">Quick Start</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SCENARIOS
+     ============================================================ -->
+<section id="scenarios">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Attack Scenarios</p>
+      <h2 class="section-title">Four Realistic Threat Campaigns</h2>
+      <p class="section-subtitle">
+        Each scenario is a complete, self-contained attack simulation with
+        pre-generated Wazuh alerts mapped to the MITRE ATT&CK framework.
+      </p>
+    </div>
+    <div class="scenarios-grid">
+
+      <div class="scenario-card reveal">
+        <div class="scenario-num">Scenario 01</div>
+        <h3>Operation Dark Harvest</h3>
+        <p class="desc">
+          Web application compromise via SQL injection, web shell upload, privilege
+          escalation, and data exfiltration through chunked HTTP transfers.
+        </p>
+        <div class="scenario-tags">
+          <span class="tag">SQLi</span>
+          <span class="tag">Web Shell</span>
+          <span class="tag">Privesc</span>
+          <span class="tag">Exfiltration</span>
+        </div>
+        <div class="scenario-meta">
+          <span>Challenges: <span class="val">36</span></span>
+          <span>Alerts: <span class="val">900</span></span>
+          <span>Target: <span class="val">web-srv</span></span>
+          <span>Points: <span class="val">9,200</span></span>
+        </div>
+      </div>
+
+      <div class="scenario-card reveal">
+        <div class="scenario-num">Scenario 02</div>
+        <h3>Operation Iron Gate</h3>
+        <p class="desc">
+          Active Directory attack chain: spear-phishing, Mimikatz credential dump,
+          Kerberoasting, lateral movement, and ransomware deployment.
+        </p>
+        <div class="scenario-tags">
+          <span class="tag">Phishing</span>
+          <span class="tag">Mimikatz</span>
+          <span class="tag">Kerberoast</span>
+          <span class="tag">Ransomware</span>
+        </div>
+        <div class="scenario-meta">
+          <span>Challenges: <span class="val">36</span></span>
+          <span>Alerts: <span class="val">1,200</span></span>
+          <span>Target: <span class="val">dc-srv</span></span>
+          <span>Points: <span class="val">9,200</span></span>
+        </div>
+      </div>
+
+      <div class="scenario-card reveal">
+        <div class="scenario-num">Scenario 03</div>
+        <h3>Ghost in the Shell</h3>
+        <p class="desc">
+          Linux server compromise via SSH brute force, rootkit installation
+          with kernel module, C2 beaconing, and cryptominer deployment.
+        </p>
+        <div class="scenario-tags">
+          <span class="tag">SSH Brute Force</span>
+          <span class="tag">Rootkit</span>
+          <span class="tag">C2</span>
+          <span class="tag">Cryptominer</span>
+        </div>
+        <div class="scenario-meta">
+          <span>Challenges: <span class="val">36</span></span>
+          <span>Alerts: <span class="val">9,000</span></span>
+          <span>Target: <span class="val">lnx-srv</span></span>
+          <span>Points: <span class="val">9,200</span></span>
+        </div>
+      </div>
+
+      <div class="scenario-card reveal">
+        <div class="scenario-num">Scenario 04</div>
+        <h3>Supply Chain Phantom</h3>
+        <p class="desc">
+          Multi-vector supply chain attack: dependency confusion via pip,
+          DNS tunneling for C2, HTTPS data exfiltration, and anti-forensics.
+        </p>
+        <div class="scenario-tags">
+          <span class="tag">Supply Chain</span>
+          <span class="tag">DNS Tunnel</span>
+          <span class="tag">Exfil</span>
+          <span class="tag">Anti-Forensics</span>
+        </div>
+        <div class="scenario-meta">
+          <span>Challenges: <span class="val">42</span></span>
+          <span>Alerts: <span class="val">600</span></span>
+          <span>Target: <span class="val">3 hosts</span></span>
+          <span>Points: <span class="val">11,600</span></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     DIFFICULTY LEVELS
+     ============================================================ -->
+<section id="levels" style="background:var(--bg-card2)">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Difficulty Tiers</p>
+      <h2 class="section-title">From Puppy to Fenrir</h2>
+      <p class="section-subtitle">
+        Four progressive difficulty levels separate the SOC newcomers from the
+        seasoned threat hunters. Can you conquer the wolf?
+      </p>
+    </div>
+    <div class="levels-grid">
+
+      <div class="level-card pup reveal">
+        <span class="level-icon">&#x1F436;</span>
+        <h3>Pup</h3>
+        <p class="level-pts">100 points each</p>
+        <p class="level-desc">
+          Dashboard navigation, single filters, field reading.
+          Perfect for SOC newcomers learning Wazuh basics.
+        </p>
+        <div class="level-count">40</div>
+        <p style="font-size:.75rem;color:var(--text-dim)">challenges</p>
+      </div>
+
+      <div class="level-card hunter reveal">
+        <span class="level-icon">&#x1F415;</span>
+        <h3>Hunter</h3>
+        <p class="level-pts">200 points each</p>
+        <p class="level-desc">
+          Event correlation, timeline analysis, multi-field filtering.
+          For analysts comfortable with log investigation.
+        </p>
+        <div class="level-count">40</div>
+        <p style="font-size:.75rem;color:var(--text-dim)">challenges</p>
+      </div>
+
+      <div class="level-card alpha reveal">
+        <span class="level-icon">&#x1F43A;</span>
+        <h3>Alpha</h3>
+        <p class="level-pts">300 points each</p>
+        <p class="level-desc">
+          MITRE ATT&CK mapping, detection engineering, forensic analysis.
+          Demands deep security knowledge.
+        </p>
+        <div class="level-count">39</div>
+        <p style="font-size:.75rem;color:var(--text-dim)">challenges</p>
+      </div>
+
+      <div class="level-card fenrir reveal">
+        <span class="level-icon">&#x1F3C6;</span>
+        <h3>Fenrir</h3>
+        <p class="level-pts">500 points each</p>
+        <p class="level-desc">
+          Full incident reconstruction, evasion analysis, IOC chain extraction.
+          Only the elite survive Fenrir.
+        </p>
+        <div class="level-count">31</div>
+        <p style="font-size:.75rem;color:var(--text-dim)">challenges</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     COMPARISON
+     ============================================================ -->
+<section id="comparison" class="comparison">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">How We Compare</p>
+      <h2 class="section-title">WazuhBOTS vs Splunk BOTS</h2>
+      <p class="section-subtitle">
+        Built from the ground up to surpass the original Boss of the SOC
+        competitions &mdash; with 100% open-source tooling.
+      </p>
+    </div>
+    <table class="comparison-table reveal">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Splunk BOTSv1</th>
+          <th>Splunk BOTSv2</th>
+          <th>Splunk BOTSv3</th>
+          <th>Splunk Combined</th>
+          <th>WazuhBOTS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Challenges</td>
+          <td>28</td>
+          <td>48</td>
+          <td>60</td>
+          <td>136</td>
+          <td class="winner"><span class="highlight">150</span> <span class="crown">&#x1F451;</span></td>
+        </tr>
+        <tr>
+          <td>Scenarios</td>
+          <td>1</td>
+          <td>2</td>
+          <td>2</td>
+          <td>5</td>
+          <td>4</td>
+        </tr>
+        <tr>
+          <td>Difficulty Levels</td>
+          <td>3</td>
+          <td>3</td>
+          <td>3</td>
+          <td>3</td>
+          <td class="winner"><span class="highlight">4</span></td>
+        </tr>
+        <tr>
+          <td>SIEM Platform</td>
+          <td colspan="4" style="text-align:center">Splunk Enterprise (proprietary)</td>
+          <td class="winner"><span class="highlight">Wazuh (open source)</span></td>
+        </tr>
+        <tr>
+          <td>License Cost</td>
+          <td colspan="4" style="text-align:center">$$$ (Splunk license required)</td>
+          <td class="winner"><span class="highlight">Free / MIT</span></td>
+        </tr>
+        <tr>
+          <td>Self-Hosted</td>
+          <td colspan="4" style="text-align:center">Partial (needs Splunk instance)</td>
+          <td class="winner"><span class="highlight">Full Docker Compose</span></td>
+        </tr>
+        <tr>
+          <td>MITRE ATT&CK</td>
+          <td>Partial</td>
+          <td>Partial</td>
+          <td>Yes</td>
+          <td>&mdash;</td>
+          <td class="winner"><span class="highlight">Full mapping</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================
+     ARCHITECTURE
+     ============================================================ -->
+<section id="architecture">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Technical Architecture</p>
+      <h2 class="section-title">Production-Grade Stack</h2>
+      <p class="section-subtitle">
+        All components run as Docker containers, orchestrated with a single
+        <code>docker compose up -d</code> command.
+      </p>
+    </div>
+    <div class="arch-diagram reveal">
+
+      <div>
+        <p class="arch-label">Participants</p>
+        <div class="arch-layer">
+          <div class="arch-box">
+            <span class="icon">&#x1F50D;</span>
+            <h4>Wazuh Dashboard</h4>
+            <p>Investigate alerts, build queries, analyze threats</p>
+          </div>
+          <div class="arch-box">
+            <span class="icon">&#x1F3AF;</span>
+            <h4>CTFd Platform</h4>
+            <p>Submit flags, track scores, view leaderboard</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-arrow">&#x25BC;</div>
+
+      <div>
+        <p class="arch-label">Backend Services</p>
+        <div class="arch-layer">
+          <div class="arch-box">
+            <span class="icon">&#x1F6E1;</span>
+            <h4>Wazuh Manager</h4>
+            <p>SIEM engine, rules, decoders, active response</p>
+          </div>
+          <div class="arch-box">
+            <span class="icon">&#x1F4BE;</span>
+            <h4>Wazuh Indexer</h4>
+            <p>OpenSearch-based storage &amp; full-text search</p>
+          </div>
+          <div class="arch-box">
+            <span class="icon">&#x1F310;</span>
+            <h4>Nginx Proxy</h4>
+            <p>TLS termination, routing, load balancing</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-arrow">&#x25BC;</div>
+
+      <div>
+        <p class="arch-label">Victim Infrastructure</p>
+        <div class="arch-layer">
+          <div class="arch-box">
+            <span class="icon">&#x1F5A5;</span>
+            <h4>web-srv</h4>
+            <p>Ubuntu 22.04 &mdash; Apache, MySQL, PHP</p>
+          </div>
+          <div class="arch-box">
+            <span class="icon">&#x1F3E2;</span>
+            <h4>dc-srv</h4>
+            <p>Windows Server 2019 &mdash; Active Directory</p>
+          </div>
+          <div class="arch-box">
+            <span class="icon">&#x1F427;</span>
+            <h4>lnx-srv</h4>
+            <p>Ubuntu 22.04 &mdash; SSH, Python, cron</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FEATURES
+     ============================================================ -->
+<section style="background:var(--bg-card2)">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Why WazuhBOTS</p>
+      <h2 class="section-title">Key Features</h2>
+    </div>
+    <div class="features-grid">
+      <div class="feature reveal">
+        <div class="feature-icon">&#x1F512;</div>
+        <div>
+          <h4>100% Open Source</h4>
+          <p>MIT licensed. No vendor lock-in. Deploy anywhere &mdash; on-prem, cloud, or air-gapped environments.</p>
+        </div>
+      </div>
+      <div class="feature reveal">
+        <div class="feature-icon">&#x1F504;</div>
+        <div>
+          <h4>Reproducible Datasets</h4>
+          <p>Deterministic generators with fixed random seeds. Regenerate identical datasets every time.</p>
+        </div>
+      </div>
+      <div class="feature reveal">
+        <div class="feature-icon">&#x1F3AF;</div>
+        <div>
+          <h4>MITRE ATT&CK Mapped</h4>
+          <p>Every scenario maps to real-world techniques. Participants learn the framework while they compete.</p>
+        </div>
+      </div>
+      <div class="feature reveal">
+        <div class="feature-icon">&#x1F680;</div>
+        <div>
+          <h4>One-Command Deploy</h4>
+          <p>Full stack launches with <code>docker compose up -d</code>. Includes auto-ingestion and CTFd setup.</p>
+        </div>
+      </div>
+      <div class="feature reveal">
+        <div class="feature-icon">&#x1F4CA;</div>
+        <div>
+          <h4>Dynamic Scoring</h4>
+          <p>Point values decay as more teams solve. First-blood and time bonuses reward speed.</p>
+        </div>
+      </div>
+      <div class="feature reveal">
+        <div class="feature-icon">&#x1F9E9;</div>
+        <div>
+          <h4>Extensible</h4>
+          <p>Add new scenarios with the scenario template. Custom rules, decoders, and challenge generators included.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     MITRE ATT&CK COVERAGE
+     ============================================================ -->
+<section>
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Threat Coverage</p>
+      <h2 class="section-title">MITRE ATT&CK Techniques</h2>
+      <p class="section-subtitle">
+        30+ unique MITRE ATT&CK techniques across all four scenarios, covering
+        the full kill chain from initial access to impact.
+      </p>
+    </div>
+    <div class="mitre-grid reveal">
+      <span class="mitre-tag">T1595.002 Vuln Scanning</span>
+      <span class="mitre-tag">T1190 Exploit Public App</span>
+      <span class="mitre-tag">T1505.003 Web Shell</span>
+      <span class="mitre-tag">T1059.001 PowerShell</span>
+      <span class="mitre-tag">T1059.006 Python</span>
+      <span class="mitre-tag">T1110.001 Brute Force</span>
+      <span class="mitre-tag">T1078 Valid Accounts</span>
+      <span class="mitre-tag">T1566.001 Spearphishing</span>
+      <span class="mitre-tag">T1003.001 LSASS Dump</span>
+      <span class="mitre-tag">T1558.003 Kerberoasting</span>
+      <span class="mitre-tag">T1550.002 Pass the Hash</span>
+      <span class="mitre-tag">T1021.002 SMB/Admin Shares</span>
+      <span class="mitre-tag">T1570 Lateral Tool Transfer</span>
+      <span class="mitre-tag">T1105 Ingress Tool Transfer</span>
+      <span class="mitre-tag">T1548.003 Sudo Abuse</span>
+      <span class="mitre-tag">T1053.003 Cron</span>
+      <span class="mitre-tag">T1543.002 Systemd Service</span>
+      <span class="mitre-tag">T1547.006 Kernel Modules</span>
+      <span class="mitre-tag">T1014 Rootkit</span>
+      <span class="mitre-tag">T1195.001 Supply Chain</span>
+      <span class="mitre-tag">T1071.004 DNS Tunneling</span>
+      <span class="mitre-tag">T1573 Encrypted Channel</span>
+      <span class="mitre-tag">T1041 Exfil Over C2</span>
+      <span class="mitre-tag">T1048 Exfil Alt Protocol</span>
+      <span class="mitre-tag">T1074.001 Local Staging</span>
+      <span class="mitre-tag">T1486 Data Encrypted</span>
+      <span class="mitre-tag">T1490 Inhibit Recovery</span>
+      <span class="mitre-tag">T1496 Cryptomining</span>
+      <span class="mitre-tag">T1070.003 Clear History</span>
+      <span class="mitre-tag">T1070.006 Timestomping</span>
+      <span class="mitre-tag">T1562.001 Disable Tools</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     QUICKSTART
+     ============================================================ -->
+<section id="quickstart" class="quickstart">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Get Started</p>
+      <h2 class="section-title">Deploy in Minutes</h2>
+      <p class="section-subtitle">
+        From zero to a running SOC competition in five commands.
+      </p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <span class="step-num">1</span>
+        <div class="step-content">
+          <h4>Clone the Repository</h4>
+          <p>Get the full project with scenarios, generators, and Docker configs.</p>
+          <code>git clone https://github.com/mrhackerbot/WazuhBOTS.git && cd WazuhBOTS</code>
+        </div>
+      </div>
+      <div class="step reveal">
+        <span class="step-num">2</span>
+        <div class="step-content">
+          <h4>Generate Datasets</h4>
+          <p>Create deterministic alert datasets for all four attack scenarios.</p>
+          <code>python3 scripts/generate_datasets.py --all</code>
+        </div>
+      </div>
+      <div class="step reveal">
+        <span class="step-num">3</span>
+        <div class="step-content">
+          <h4>Launch the Stack</h4>
+          <p>Bring up Wazuh Manager, Indexer, Dashboard, CTFd, and Nginx.</p>
+          <code>cp .env.example .env    # Edit passwords first
+docker compose up -d</code>
+        </div>
+      </div>
+      <div class="step reveal">
+        <span class="step-num">4</span>
+        <div class="step-content">
+          <h4>Ingest Alerts</h4>
+          <p>Load pre-generated alerts into the Wazuh Indexer with proper mappings.</p>
+          <code>python3 scripts/ingest_datasets.py --all</code>
+        </div>
+      </div>
+      <div class="step reveal">
+        <span class="step-num">5</span>
+        <div class="step-content">
+          <h4>Load Challenges into CTFd</h4>
+          <p>Import all 150 challenges with flags, hints, and scoring into CTFd.</p>
+          <code>python3 scripts/generate_flags.py</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     AUTHOR
+     ============================================================ -->
+<section>
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Created By</p>
+      <h2 class="section-title">About the Author</h2>
+    </div>
+    <div class="author-card reveal">
+      <div class="author-avatar">&#x1F9D1;&#x200D;&#x1F4BB;</div>
+      <div class="author-info">
+        <h3>MrHacker (Kevin Mu&ntilde;oz)</h3>
+        <p class="role">Wazuh Technology Ambassador</p>
+        <p>
+          Security engineer and open-source advocate dedicated to making
+          enterprise-grade security training accessible to everyone. WazuhBOTS
+          was created to provide the community with a free, production-quality
+          alternative to proprietary SOC competitions.
+        </p>
+        <div class="author-links">
+          <a href="https://github.com/mrhackerbot" target="_blank">
+            GitHub
+          </a>
+          <a href="https://github.com/mrhackerbot/WazuhBOTS" target="_blank">
+            WazuhBOTS Repo
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+<footer>
+  <div class="logos">
+    <span>&#x1F6E1; Wazuh</span>
+    <span>&#x1F3F4; CTFd</span>
+    <span>&#x1F433; Docker</span>
+    <span>&#x1F310; Nginx</span>
+  </div>
+  <p>
+    WazuhBOTS &mdash; Boss of the SOC &copy; 2026 MrHacker (Kevin Mu&ntilde;oz)
+    &middot; MIT License &middot;
+    <a href="https://github.com/mrhackerbot/WazuhBOTS">GitHub</a>
+  </p>
+</footer>
+
+<!-- ============================================================
+     SCRIPTS
+     ============================================================ -->
+<script>
+/* Counter animation for hero stats */
+function animateCounters(){
+  document.querySelectorAll('.hero-stat .num').forEach(el=>{
+    const target=+el.dataset.count;
+    const duration=1800;
+    const start=performance.now();
+    function tick(now){
+      const t=Math.min((now-start)/duration,1);
+      const ease=1-Math.pow(1-t,3);
+      const val=Math.round(ease*target);
+      el.textContent=val.toLocaleString('en-US');
+      if(t<1)requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+/* Scroll reveal */
+const io=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('visible');
+      io.unobserve(e.target);
+    }
+  });
+},{threshold:.15});
+
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* Trigger counters when hero is visible */
+const heroObs=new IntersectionObserver((entries)=>{
+  if(entries[0].isIntersecting){animateCounters();heroObs.disconnect();}
+},{threshold:.3});
+heroObs.observe(document.querySelector('.hero'));
+</script>
+
+</body>
+</html>

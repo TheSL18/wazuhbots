@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="wolfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.05"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glowEye">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="96" fill="#0a0e17"/>
+  <circle cx="100" cy="100" r="96" fill="none" stroke="url(#wolfGrad)" stroke-width="2" opacity="0.6"/>
+
+  <!-- Hexagonal shield -->
+  <path d="M100,14 L178,46 L178,130 L100,185 L22,130 L22,46 Z"
+        fill="url(#shieldGrad)" stroke="url(#wolfGrad)" stroke-width="1.5" opacity="0.4"/>
+
+  <!-- Wolf Head - Centered -->
+  <g filter="url(#glow)" transform="translate(-10,-8)">
+    <!-- Left ear -->
+    <polygon points="62,52 84,26 96,68" fill="url(#wolfGrad)" opacity="0.9"/>
+    <!-- Right ear -->
+    <polygon points="158,52 136,26 124,68" fill="url(#wolfGrad)" opacity="0.9"/>
+
+    <!-- Head top -->
+    <polygon points="84,48 110,34 136,48 132,76 110,64 88,76" fill="url(#wolfGrad)" opacity="0.85"/>
+
+    <!-- Face left -->
+    <polygon points="88,76 110,64 104,102 68,108 58,80" fill="url(#wolfGrad)" opacity="0.75"/>
+    <!-- Face right -->
+    <polygon points="132,76 110,64 116,102 152,108 162,80" fill="url(#wolfGrad)" opacity="0.75"/>
+
+    <!-- Snout left -->
+    <polygon points="68,108 104,102 96,140 76,134" fill="url(#wolfGrad)" opacity="0.65"/>
+    <!-- Snout right -->
+    <polygon points="152,108 116,102 124,140 144,134" fill="url(#wolfGrad)" opacity="0.65"/>
+
+    <!-- Lower jaw -->
+    <polygon points="76,134 96,140 110,162 124,140 144,134 110,178"
+            fill="url(#wolfGrad)" opacity="0.5"/>
+  </g>
+
+  <!-- Eyes -->
+  <g filter="url(#glowEye)" transform="translate(-10,-8)">
+    <polygon points="76,84 96,78 94,96 74,98" fill="#06b6d4"/>
+    <polygon points="144,84 124,78 126,96 146,98" fill="#06b6d4"/>
+  </g>
+  <circle cx="78" cy="80" r="3.5" fill="#0a0e17"/>
+  <circle cx="134" cy="80" r="3.5" fill="#0a0e17"/>
+  <circle cx="80" cy="78" r="1.5" fill="#fff" opacity="0.8"/>
+  <circle cx="136" cy="78" r="1.5" fill="#fff" opacity="0.8"/>
+
+  <!-- Nose -->
+  <polygon points="95,114 115,114 105,124" fill="#0a0e17" opacity="0.5" transform="translate(-10,-8)"/>
+
+  <!-- Corner circuit decorations -->
+  <g stroke="#3b82f6" stroke-width="1" opacity="0.3">
+    <line x1="15" y1="30" x2="35" y2="30"/><line x1="35" y1="30" x2="35" y2="15"/>
+    <circle cx="35" cy="15" r="2" fill="#3b82f6"/>
+    <line x1="185" y1="30" x2="165" y2="30"/><line x1="165" y1="30" x2="165" y2="15"/>
+    <circle cx="165" cy="15" r="2" fill="#06b6d4"/>
+    <line x1="15" y1="170" x2="35" y2="170"/><line x1="35" y1="170" x2="35" y2="185"/>
+    <circle cx="35" cy="185" r="2" fill="#06b6d4"/>
+    <line x1="185" y1="170" x2="165" y2="170"/><line x1="165" y1="170" x2="165" y2="185"/>
+    <circle cx="165" cy="185" r="2" fill="#3b82f6"/>
+  </g>
+</svg>

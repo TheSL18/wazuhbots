@@ -1,0 +1,18 @@
+[Unit]
+Description=WazuhBOTS First Boot Deployment
+Documentation=https://github.com/MrHacker-X/wazuhbots
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+ConditionPathExists=/opt/wazuhbots/.firstboot-pending
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+TimeoutStartSec=1800
+ExecStart=/opt/wazuhbots/firstboot.sh
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target

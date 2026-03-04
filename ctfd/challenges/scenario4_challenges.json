@@ -1,0 +1,1603 @@
+{
+  "scenario": {
+    "id": 4,
+    "name": "Supply Chain Phantom",
+    "codename": "supply_chain",
+    "category": "Scenario 4: Supply Chain Phantom",
+    "description": "A sophisticated supply chain attack compromises an internal npm/pip package through dependency confusion. The malicious package deploys a backdoor via a post-install script, establishes C2 communication through DNS tunneling, performs lateral movement across all hosts sharing the package, stages data, and exfiltrates it over HTTPS while manipulating log rotation to cover tracks. This is an expert-level multi-host investigation requiring correlation across web-srv, dc-srv, and lnx-srv simultaneously.",
+    "victim_hosts": [
+      "web-srv",
+      "dc-srv",
+      "lnx-srv"
+    ],
+    "attack_timeframe": "2026-03-05T00:00:00Z to 2026-03-06T12:00:00Z",
+    "kill_chain_summary": [
+      "Malicious package installed via dependency confusion (typosquatted internal package name)",
+      "Backdoor activated via post-install script in package setup.py/postinstall.js",
+      "C2 beaconing established via DNS tunneling (encoded data in TXT record queries)",
+      "Lateral movement between servers sharing the compromised package",
+      "Data staging to /tmp and /dev/shm directories",
+      "Exfiltration via HTTPS POST to attacker-controlled CDN endpoint",
+      "Anti-forensics via log rotation manipulation (logrotate.conf modification)"
+    ]
+  },
+  "challenges": [
+    {
+      "id": "S4-PUP-01",
+      "name": "[Pup] Total Hosts Infected",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Pup",
+      "description": "How many total hosts were infected by the Supply Chain Phantom malicious package?\n\nUse the Wazuh Dashboard to identify distinct agent names that generated alerts related to the malicious package installation or backdoor activity during the attack timeframe.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "3",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario4",
+        "host-count",
+        "supply-chain"
+      ],
+      "hints": [
+        {
+          "content": "Search for alerts mentioning the malicious package name 'wazuhbots-utils' and check how many unique agent.name values appear in the results.",
+          "cost": 25
+        },
+        {
+          "content": "The WazuhBOTS infrastructure has three servers: web-srv, dc-srv, and lnx-srv. Check which of these show evidence of the package installation.",
+          "cost": 25
+        },
+        {
+          "content": "All three hosts (web-srv, dc-srv, lnx-srv) were infected. The answer is a single digit.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S4-PUP-02",
+      "name": "[Pup] Package Manager Used",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Pup",
+      "description": "What package manager was used to install the malicious supply chain package on the compromised hosts?\n\nLook at command execution alerts and process audit logs to identify which package manager was invoked to install the dependency.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "pip",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario4",
+        "package-manager",
+        "supply-chain"
+      ],
+      "hints": [
+        {
+          "content": "Look at auditd EXECVE events or Wazuh command monitoring alerts that show package installation commands. The package manager is a common Python tool.",
+          "cost": 25
+        },
+        {
+          "content": "The malicious package was a Python package distributed via PyPI. The standard Python package installer was used.",
+          "cost": 25
+        },
+        {
+          "content": "The package manager is 'pip', the standard Python package installer. Look for 'pip install' commands in the audit logs.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S4-PUP-03",
+      "name": "[Pup] Attack Start Date",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Pup",
+      "description": "On what date (UTC) did the Supply Chain Phantom attack begin?\n\nFormat: YYYY-MM-DD\n\nIdentify the date of the first malicious activity by looking at the earliest alert timestamps related to the compromised package installation.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "2026-03-05",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario4",
+        "timeline",
+        "attack-date"
+      ],
+      "hints": [
+        {
+          "content": "Filter alerts by category 'Scenario 4' or by the malicious package name and sort by timestamp ascending. The earliest alert's date is your answer.",
+          "cost": 25
+        },
+        {
+          "content": "The attack started in early March 2026. Look at the @timestamp field of the first supply chain related alert.",
+          "cost": 25
+        },
+        {
+          "content": "The attack began on March 5, 2026. The first package installation occurred in the early morning hours UTC.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S4-PUP-04",
+      "name": "[Pup] Persistence Service Name",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Pup",
+      "description": "What is the name of the systemd service created by the backdoor for persistence?\n\nLook for alerts related to new systemd service creation or systemctl commands during the attack timeframe.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "svc_update.service",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario4",
+        "persistence",
+        "systemd"
+      ],
+      "hints": [
+        {
+          "content": "Search for FIM alerts on files created under /etc/systemd/system/ or for systemctl enable/start commands in the audit logs during the attack timeframe.",
+          "cost": 25
+        },
+        {
+          "content": "The service name is designed to look like a legitimate system update service. It matches the backdoor script name but with a .service extension.",
+          "cost": 25
+        },
+        {
+          "content": "The persistence service is named 'svc_update.service', matching the backdoor script 'svc_update.py'.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S4-PUP-05",
+      "name": "[Pup] First Host Infected",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Pup",
+      "description": "Which host (agent name) was the first to be infected by the malicious supply chain package?\n\nSort the package installation alerts by timestamp to identify which server was compromised first.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "web-srv",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario4",
+        "first-host",
+        "timeline"
+      ],
+      "hints": [
+        {
+          "content": "Filter alerts for the malicious package installation across all agents and sort by timestamp ascending. The agent.name of the earliest alert is your answer.",
+          "cost": 25
+        },
+        {
+          "content": "The first infected host runs the web application stack and had a CI/CD pipeline that triggered the dependency confusion first.",
+          "cost": 25
+        },
+        {
+          "content": "web-srv was the first host infected, with the malicious package installed in the early morning hours of March 5, 2026.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S4-PUP-06",
+      "name": "[Pup] DNS Tunnel Alerts Per Host",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Pup",
+      "description": "How many DNS tunneling alerts were generated per individual host during the attack?\n\nFilter for DNS tunneling or anomalous DNS query alerts and count the number of alerts per agent.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "40",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario4",
+        "dns-tunneling",
+        "alert-count"
+      ],
+      "hints": [
+        {
+          "content": "Search for alerts related to DNS tunneling or anomalous DNS queries. Group results by agent.name and check the count for each host.",
+          "cost": 25
+        },
+        {
+          "content": "Each infected host generated the same number of DNS tunnel alerts. The count is a round number between 30 and 50.",
+          "cost": 25
+        },
+        {
+          "content": "Each host generated exactly 40 DNS tunneling alerts, for a total of 120 across all three hosts.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S4-PUP-07",
+      "name": "[Pup] Backdoor Script Filename",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Pup",
+      "description": "What is the filename (not the full path) of the backdoor script dropped by the malicious package?\n\nLook at FIM alerts for new Python script files created during the package installation process.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "svc_update.py",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario4",
+        "backdoor",
+        "filename"
+      ],
+      "hints": [
+        {
+          "content": "Search FIM (syscheck) alerts for new .py files created in unusual locations during the attack timeframe. The backdoor filename resembles a system service update script.",
+          "cost": 25
+        },
+        {
+          "content": "The backdoor script shares its name with the persistence service but uses a Python file extension instead of .service.",
+          "cost": 25
+        },
+        {
+          "content": "The backdoor script is named 'svc_update.py'. It was dropped inside a hidden .config/ directory within the package's installation path.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S4-PUP-08",
+      "name": "[Pup] Logrotate Target Config",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Pup",
+      "description": "What is the full path of the logrotate configuration file that the attacker modified for anti-forensics?\n\nLook for FIM alerts on logrotate configuration files that were changed during the attack.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "/etc/logrotate.d/wazuh",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario4",
+        "anti-forensics",
+        "logrotate"
+      ],
+      "hints": [
+        {
+          "content": "Search for FIM alerts on files under /etc/logrotate.d/ or /etc/logrotate.conf. The attacker targeted a specific application's logrotate configuration.",
+          "cost": 25
+        },
+        {
+          "content": "The modified logrotate config file is specific to the Wazuh agent's log rotation. It is located in the /etc/logrotate.d/ directory.",
+          "cost": 25
+        },
+        {
+          "content": "The file is /etc/logrotate.d/wazuh. The attacker modified it to reduce log retention and destroy forensic evidence.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S4-PUP-09",
+      "name": "[Pup] Malicious Package Version",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Pup",
+      "description": "What version number of the malicious wazuhbots-utils package was installed on the compromised hosts?\n\nCheck the pip install command output or package metadata in the audit logs to find the version string.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "1.3.7",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario4",
+        "package-version",
+        "supply-chain"
+      ],
+      "hints": [
+        {
+          "content": "Look for pip install log entries or command execution alerts that mention the package version. The version follows semantic versioning format (X.Y.Z).",
+          "cost": 25
+        },
+        {
+          "content": "The malicious package used a version number higher than the legitimate internal package to ensure pip would prefer it during dependency resolution.",
+          "cost": 25
+        },
+        {
+          "content": "The installed version is 1.3.7. Look for 'wazuhbots-utils==1.3.7' or 'wazuhbots-utils-1.3.7' in the alert data.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S4-PUP-10",
+      "name": "[Pup] Pip Install User",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Pup",
+      "description": "What user account executed the pip install command that installed the malicious package?\n\nCheck the auditd events or Wazuh command monitoring alerts for the pip install command to identify the effective user.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "root",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario4",
+        "user",
+        "pip-install"
+      ],
+      "hints": [
+        {
+          "content": "Look at the audit.euid or data.audit.euid field in the EXECVE events for the pip install command. Alternatively, check the process owner in command monitoring alerts.",
+          "cost": 25
+        },
+        {
+          "content": "The package was installed with elevated privileges, which allowed the post-install script to write to system directories and create systemd services.",
+          "cost": 25
+        },
+        {
+          "content": "The pip install was executed as root. This is a common misconfiguration in CI/CD pipelines that amplified the supply chain attack's impact.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S4-HNT-01",
+      "name": "[Hunter] Infection Time Spread",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Hunter",
+      "description": "What is the total time spread (in minutes) between the first host infection and the last host infection?\n\nCalculate the difference in minutes between the earliest and latest backdoor activation timestamps across all three hosts.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "390",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario4",
+        "timeline",
+        "infection-spread"
+      ],
+      "hints": [
+        {
+          "content": "Find the backdoor activation timestamp on the first infected host and the last infected host. Calculate the difference between these two timestamps in minutes.",
+          "cost": 50
+        },
+        {
+          "content": "web-srv was infected first (around 02:14 UTC) and lnx-srv was infected last (around 08:45 UTC) on March 5, 2026. Calculate the minute difference between these times.",
+          "cost": 50
+        },
+        {
+          "content": "From 02:14:33 UTC to 08:45:22 UTC is approximately 391 minutes. The spread covers about 6.5 hours across the three hosts.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S4-HNT-02",
+      "name": "[Hunter] DC-SRV Infection Timestamp",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Hunter",
+      "description": "What is the exact UTC timestamp when the backdoor was first activated on dc-srv?\n\nFormat: YYYY-MM-DDTHH:MM:SSZ\n\nFind the first process execution event of the backdoor script or the first DNS tunneling query originating from dc-srv.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "2026-03-05T06:31:07Z",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario4",
+        "timestamp",
+        "dc-srv"
+      ],
+      "hints": [
+        {
+          "content": "Filter alerts by agent.name: dc-srv and look for the first occurrence of svc_update.py execution or DNS tunneling activity. Sort by timestamp ascending.",
+          "cost": 50
+        },
+        {
+          "content": "dc-srv was the second host infected, several hours after web-srv. The infection occurred during the morning hours of March 5, 2026 UTC.",
+          "cost": 50
+        },
+        {
+          "content": "The exact timestamp is 2026-03-05T06:31:07Z. This corresponds to dc-srv's CI/CD pipeline schedule triggering the pip install.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S4-HNT-03",
+      "name": "[Hunter] DNS Tunnel Base Domain",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Hunter",
+      "description": "What is the base domain used for DNS tunneling C2 communication?\n\nAnalyze DNS query alerts for patterns of encoded subdomain labels and TXT record queries. Extract the common base domain from these queries.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "cdn-analytics.cloud-metrics.net",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario4",
+        "dns-tunneling",
+        "c2-domain"
+      ],
+      "hints": [
+        {
+          "content": "Look for DNS query alerts with unusually long subdomain labels or high volumes of TXT record queries. The base domain appears after the encoded data portion of each query.",
+          "cost": 50
+        },
+        {
+          "content": "The C2 domain is designed to look like a legitimate CDN analytics service. DNS queries follow the pattern: <encoded_data>.cdn-analytics.<parent_domain>.",
+          "cost": 50
+        },
+        {
+          "content": "The base domain is 'cdn-analytics.cloud-metrics.net'. All DNS tunnel queries use this domain with encoded data prepended as subdomain labels.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S4-HNT-04",
+      "name": "[Hunter] Exfiltration URL Domain",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Hunter",
+      "description": "What domain was used for HTTPS data exfiltration (not the DNS tunneling domain)?\n\nLook for outbound HTTPS connections or curl/wget commands in the audit logs that transfer staged data to an external endpoint.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "cdn-static.cloud-metrics.net",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario4",
+        "exfiltration",
+        "https-domain"
+      ],
+      "hints": [
+        {
+          "content": "The exfiltration uses a different subdomain than the DNS tunneling C2 but the same parent domain. Look for HTTPS POST requests or outbound connections to cloud-metrics.net variants.",
+          "cost": 50
+        },
+        {
+          "content": "Search for curl or python requests.post() commands in auditd EXECVE events. The exfiltration endpoint mimics a CDN static content upload service.",
+          "cost": 50
+        },
+        {
+          "content": "The exfiltration domain is 'cdn-static.cloud-metrics.net'. Data was sent via HTTPS POST to /api/v2/upload on this host.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S4-HNT-05",
+      "name": "[Hunter] Web-SRV Exfil Volume",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Hunter",
+      "description": "How many megabytes (MB) of data were exfiltrated from web-srv specifically?\n\nAnalyze the exfiltration alerts or outbound transfer logs for agent web-srv to calculate the total data volume sent to the attacker's endpoint.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "312",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario4",
+        "exfiltration",
+        "data-volume",
+        "web-srv"
+      ],
+      "hints": [
+        {
+          "content": "Filter exfiltration-related alerts by agent.name: web-srv. Look at Content-Length headers in HTTP POST requests or file sizes of staged data that was transferred.",
+          "cost": 50
+        },
+        {
+          "content": "web-srv exfiltrated database dumps and application data. Sum the file sizes or transfer volumes from the HTTPS POST requests originating from this host.",
+          "cost": 50
+        },
+        {
+          "content": "web-srv exfiltrated 312 MB of data. This was the largest volume among the three hosts due to database dump contents.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S4-HNT-06",
+      "name": "[Hunter] Data Staging Directories",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Hunter",
+      "description": "What two directories were used by the attacker to stage data before exfiltration?\n\nFormat: dir1|dir2 (pipe-separated, alphabetical order)\n\nLook for FIM alerts showing new files being created in temporary or memory-backed filesystem locations.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "/tmp/.cache/|/dev/shm/",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario4",
+        "data-staging",
+        "directories"
+      ],
+      "hints": [
+        {
+          "content": "Attackers commonly stage data in world-writable directories or tmpfs mounts before exfiltration. Look for FIM alerts on unusual file creation in /tmp, /dev/shm, or /var/tmp.",
+          "cost": 50
+        },
+        {
+          "content": "Two directories were used: one is a hidden subdirectory of /tmp and the other is a RAM-backed filesystem commonly used for shared memory.",
+          "cost": 50
+        },
+        {
+          "content": "The staging directories are /tmp/.cache/ and /dev/shm/. The attacker used a hidden directory in /tmp and the shared memory filesystem to avoid disk writes.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S4-HNT-07",
+      "name": "[Hunter] Logrotate Changed Values",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Hunter",
+      "description": "What were the new values the attacker set in the logrotate configuration?\n\nFormat: rotate_N_maxage_N\n\nAnalyze FIM diff alerts on the logrotate configuration file to identify the specific parameter changes.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "rotate_0_maxage_1",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario4",
+        "anti-forensics",
+        "logrotate-values"
+      ],
+      "hints": [
+        {
+          "content": "Look at FIM syscheck alerts for /etc/logrotate.d/wazuh. The diff or changed_attributes fields show what was modified. Focus on the 'rotate' and 'maxage' directives.",
+          "cost": 50
+        },
+        {
+          "content": "The attacker changed the rotation count and maximum age to minimize log retention. The new values are designed to immediately delete rotated logs.",
+          "cost": 50
+        },
+        {
+          "content": "The attacker set rotate to 0 (keep zero old log files) and maxage to 1 (delete logs older than 1 day). Format: rotate_0_maxage_1.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S4-HNT-08",
+      "name": "[Hunter] Logrotate Force Command",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Hunter",
+      "description": "What exact command did the attacker run to force logrotate to execute immediately after modifying the configuration?\n\nSearch for command execution alerts or auditd EXECVE events showing logrotate being invoked manually.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "logrotate -f /etc/logrotate.d/wazuh",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario4",
+        "anti-forensics",
+        "command-execution"
+      ],
+      "hints": [
+        {
+          "content": "After modifying the logrotate config, the attacker forced an immediate rotation. Look for auditd EXECVE events or command monitoring alerts containing 'logrotate' with a force flag.",
+          "cost": 50
+        },
+        {
+          "content": "The logrotate command supports a '-f' (force) flag to trigger immediate rotation. The attacker specified the exact configuration file to rotate.",
+          "cost": 50
+        },
+        {
+          "content": "The command is 'logrotate -f /etc/logrotate.d/wazuh'. The -f flag forces rotation regardless of whether logrotate thinks the log needs rotating.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S4-HNT-09",
+      "name": "[Hunter] LNX-SRV Infection Timestamp",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Hunter",
+      "description": "What is the exact UTC timestamp when the backdoor was first activated on lnx-srv?\n\nFormat: YYYY-MM-DDTHH:MM:SSZ\n\nFind the first backdoor execution event or DNS tunneling query originating from lnx-srv.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "2026-03-05T08:45:22Z",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario4",
+        "timestamp",
+        "lnx-srv"
+      ],
+      "hints": [
+        {
+          "content": "Filter alerts by agent.name: lnx-srv and search for the earliest occurrence of svc_update.py execution or DNS tunneling activity. lnx-srv was the last host infected.",
+          "cost": 50
+        },
+        {
+          "content": "lnx-srv was infected during the mid-morning hours of March 5, 2026 UTC, approximately 6.5 hours after web-srv and 2 hours after dc-srv.",
+          "cost": 50
+        },
+        {
+          "content": "The exact timestamp is 2026-03-05T08:45:22Z. This was the last host infected due to its later CI/CD pipeline schedule.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S4-HNT-10",
+      "name": "[Hunter] Process Tree Parent",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Hunter",
+      "description": "What is the parent process name that spawned the backdoor script execution?\n\nAnalyze the process tree in auditd events to identify which process invoked the malicious svc_update.py script during the post-install phase.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "pip",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario4",
+        "process-tree",
+        "parent-process"
+      ],
+      "hints": [
+        {
+          "content": "Look at the ppid (parent process ID) field in the auditd EXECVE events for svc_update.py execution. Resolve the parent PID to its process name.",
+          "cost": 50
+        },
+        {
+          "content": "The backdoor was launched as part of a post-install hook in the package's setup.py. The parent process is the tool that triggered the package installation.",
+          "cost": 50
+        },
+        {
+          "content": "The parent process is 'pip'. When pip runs setup.py during package installation, the post_install hook executes the backdoor with pip as the parent process.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S4-ALP-01",
+      "name": "[Alpha] Malicious Package Name",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Alpha",
+      "description": "What is the exact name of the malicious package that was installed via dependency confusion across the WazuhBOTS infrastructure?\n\nAnalyze package installation logs, pip/npm audit events, and Wazuh command monitoring alerts across all three hosts (web-srv, dc-srv, lnx-srv) to identify the typosquatted package.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "wazuhbots-utils",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario4",
+        "supply-chain",
+        "dependency-confusion",
+        "package"
+      ],
+      "hints": [
+        {
+          "content": "Look for pip install or npm install commands in auditd EXECVE events or Wazuh command monitoring across all three agents. The malicious package name is very similar to a legitimate internal package name.",
+          "cost": 75
+        },
+        {
+          "content": "Dependency confusion attacks use package names that match or closely resemble internal/private package names. The attacker published a public package with the same name as the internal 'wazuhbots_utils' but using hyphens instead of underscores.",
+          "cost": 75
+        },
+        {
+          "content": "The malicious package is 'wazuhbots-utils' (with hyphens), which pip resolves from PyPI instead of the internal 'wazuhbots_utils' package. Look for pip install events mentioning this package name.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S4-ALP-02",
+      "name": "[Alpha] Post-Install Backdoor Script Path",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Alpha",
+      "description": "What is the full filesystem path to the backdoor script that the malicious package dropped during its post-install phase?\n\nTrace the package installation process to identify where the malicious payload was written to disk. Correlate FIM alerts across all three hosts.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "/usr/local/lib/python3.10/dist-packages/wazuhbots_utils/.config/svc_update.py",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario4",
+        "backdoor",
+        "post-install",
+        "filesystem"
+      ],
+      "hints": [
+        {
+          "content": "Look for FIM (syscheck) alerts showing new files created in Python site-packages directories during or immediately after the package installation. The backdoor is hidden in a dot-directory within the package.",
+          "cost": 75
+        },
+        {
+          "content": "The malicious package creates a hidden .config/ directory inside its installation path under site-packages. The backdoor script has a name that resembles a system service update utility.",
+          "cost": 75
+        },
+        {
+          "content": "Check FIM alerts for file creation under /usr/local/lib/python3.10/dist-packages/wazuhbots_utils/. The backdoor is at .config/svc_update.py within that directory.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S4-ALP-03",
+      "name": "[Alpha] DNS Tunneling Domain",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Alpha",
+      "description": "What is the base domain used for DNS tunneling C2 communication by the Supply Chain Phantom backdoor?\n\nAnalyze DNS query logs and Wazuh alerts for anomalous DNS activity patterns, particularly TXT record queries with unusually long or encoded subdomain labels.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "cdn-analytics.cloud-metrics.net",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario4",
+        "dns-tunneling",
+        "c2",
+        "exfiltration"
+      ],
+      "hints": [
+        {
+          "content": "DNS tunneling encodes data in subdomain labels of DNS queries. Look for DNS query alerts with unusually long hostnames (labels > 30 characters) or a high volume of TXT record queries to the same base domain.",
+          "cost": 75
+        },
+        {
+          "content": "Search for Wazuh alerts related to DNS anomalies or look at raw DNS query logs. The C2 domain is designed to look like a legitimate CDN analytics service. TXT queries will have patterns like: <base64_data>.cdn-analytics.<domain>.",
+          "cost": 75
+        },
+        {
+          "content": "The base domain for DNS tunneling is 'cdn-analytics.cloud-metrics.net'. Queries look like: aGVsbG8gd29ybGQ.cdn-analytics.cloud-metrics.net with TXT record type.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S4-ALP-04",
+      "name": "[Alpha] First Affected Host",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Alpha",
+      "description": "Which host (agent name) was the first to install the malicious package and show signs of backdoor activation?\n\nCorrelate timestamps across all three agents' package installation and post-install execution events to determine the initial infection point.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "web-srv",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario4",
+        "timeline",
+        "multi-host",
+        "initial-infection"
+      ],
+      "hints": [
+        {
+          "content": "Compare the timestamps of the pip install command execution events and subsequent backdoor file creation (FIM alerts) across web-srv, dc-srv, and lnx-srv. The earliest timestamp indicates the first infected host.",
+          "cost": 75
+        },
+        {
+          "content": "The development team on one of the servers ran pip install with an updated requirements.txt first, triggering the dependency confusion. This server handles the web application stack.",
+          "cost": 75
+        },
+        {
+          "content": "web-srv was the first host to install the malicious package (during a scheduled deployment pipeline). The installation occurred approximately 4 hours before dc-srv and 6 hours before lnx-srv.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S4-ALP-05",
+      "name": "[Alpha] DNS Query Total Across Hosts",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Alpha",
+      "description": "What is the total number of DNS tunneling queries observed across all three infected hosts combined?\n\nCount all DNS tunneling alerts or anomalous DNS TXT record queries across web-srv, dc-srv, and lnx-srv during the attack timeframe.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "120",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario4",
+        "dns-tunneling",
+        "query-count",
+        "multi-host"
+      ],
+      "hints": [
+        {
+          "content": "Filter for all DNS tunneling or anomalous DNS query alerts across all three agents. The total count is the sum of DNS tunnel alerts from each host.",
+          "cost": 75
+        },
+        {
+          "content": "Each of the three infected hosts generated the same number of DNS tunneling alerts. Multiply the per-host count by the number of infected hosts.",
+          "cost": 75
+        },
+        {
+          "content": "Each host generated 40 DNS tunnel queries. With 3 hosts infected, the total is 40 x 3 = 120 queries.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S4-ALP-06",
+      "name": "[Alpha] MITRE Supply Chain Technique",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Alpha",
+      "description": "What is the MITRE ATT&CK technique ID that specifically describes the supply chain compromise vector used in this attack?\n\nIdentify the sub-technique that covers compromising software supply chains through package repositories.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "T1195.001",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario4",
+        "mitre",
+        "supply-chain",
+        "technique-id"
+      ],
+      "hints": [
+        {
+          "content": "Look at the rule.mitre.id field in the supply chain related alerts. The technique falls under the 'Supply Chain Compromise' parent technique (T1195).",
+          "cost": 75
+        },
+        {
+          "content": "T1195 has three sub-techniques. The one relevant to this attack involves compromising software dependencies or development tools, not hardware or delivery mechanisms.",
+          "cost": 75
+        },
+        {
+          "content": "T1195.001 is 'Compromise Software Dependencies and Development Tools'. This covers dependency confusion, typosquatting, and malicious package injection attacks.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S4-ALP-07",
+      "name": "[Alpha] DC-SRV Exfil Volume",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Alpha",
+      "description": "How many megabytes (MB) of data were exfiltrated specifically from dc-srv?\n\nAnalyze the exfiltration alerts and outbound HTTPS transfer logs for agent dc-srv to calculate the data volume sent to the attacker's endpoint.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "287",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario4",
+        "exfiltration",
+        "data-volume",
+        "dc-srv"
+      ],
+      "hints": [
+        {
+          "content": "Filter exfiltration-related alerts by agent.name: dc-srv. Sum the transfer sizes from HTTPS POST requests or staged file sizes for this host.",
+          "cost": 75
+        },
+        {
+          "content": "dc-srv primarily held Active Directory data and credential stores. The exfiltrated data includes NTDS.dit exports and registry hive dumps.",
+          "cost": 75
+        },
+        {
+          "content": "dc-srv exfiltrated 287 MB of data, making it the second largest source after web-srv (312 MB).",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S4-ALP-08",
+      "name": "[Alpha] Backdoor File Owner UID",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Alpha",
+      "description": "What is the numeric UID of the owner of the backdoor script file (svc_update.py) as reported in FIM alerts?\n\nCheck the syscheck (FIM) alert details for the backdoor file to identify the file ownership information.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "0",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario4",
+        "file-ownership",
+        "uid",
+        "backdoor"
+      ],
+      "hints": [
+        {
+          "content": "Look at the syscheck FIM alerts for svc_update.py. The alert data includes file metadata such as uid, gid, permissions, and ownership details.",
+          "cost": 75
+        },
+        {
+          "content": "Since the pip install was run with elevated privileges, the dropped files inherit the effective user's ownership. UID 0 corresponds to a well-known privileged account.",
+          "cost": 75
+        },
+        {
+          "content": "The backdoor file is owned by UID 0 (root), because pip was run as root during the package installation.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S4-ALP-09",
+      "name": "[Alpha] Exfil Chunk Naming Pattern",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Alpha",
+      "description": "What naming pattern did the attacker use for the exfiltration data chunks in the staging directories?\n\nAnalyze FIM alerts for files created in /tmp/.cache/ and /dev/shm/ to identify the consistent file naming convention used by the backdoor.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "chunk_NNNN.enc",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario4",
+        "exfiltration",
+        "file-naming",
+        "data-staging"
+      ],
+      "hints": [
+        {
+          "content": "Look at FIM alerts for file creation events in the staging directories (/tmp/.cache/ and /dev/shm/). The files follow a consistent naming pattern with a sequential numbering scheme.",
+          "cost": 75
+        },
+        {
+          "content": "The files are named with a prefix indicating they are data chunks, followed by a zero-padded sequence number, and an extension indicating encryption. Example: chunk_0001.enc, chunk_0002.enc, etc.",
+          "cost": 75
+        },
+        {
+          "content": "The naming pattern is 'chunk_NNNN.enc' where NNNN is a 4-digit zero-padded sequence number. The .enc extension indicates the chunks are encrypted before exfiltration.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S4-ALP-10",
+      "name": "[Alpha] Logrotate Original Values",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Alpha",
+      "description": "What were the original logrotate configuration values before the attacker modified them?\n\nFormat: rotate_N_maxage_N\n\nAnalyze FIM diff alerts on /etc/logrotate.d/wazuh to determine the pre-attack configuration values.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "rotate_7_maxage_30",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario4",
+        "anti-forensics",
+        "logrotate",
+        "original-config"
+      ],
+      "hints": [
+        {
+          "content": "FIM syscheck alerts include diff information showing before and after values. Look at the 'changed_attributes' or diff content of the alert for /etc/logrotate.d/wazuh.",
+          "cost": 75
+        },
+        {
+          "content": "The original logrotate config had standard retention values: enough rotations to keep a week of logs and a maxage allowing logs up to a month old.",
+          "cost": 75
+        },
+        {
+          "content": "The original values were rotate 7 (keep 7 rotated log files) and maxage 30 (delete logs older than 30 days). Format: rotate_7_maxage_30.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S4-ALP-11",
+      "name": "[Alpha] Systemd Unit File Path",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Alpha",
+      "description": "What is the full filesystem path of the systemd unit file created by the backdoor for persistence?\n\nSearch for FIM alerts showing new .service files created under the systemd configuration directories.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "/etc/systemd/system/svc_update.service",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario4",
+        "persistence",
+        "systemd",
+        "unit-file"
+      ],
+      "hints": [
+        {
+          "content": "Look for FIM alerts showing new files created under /etc/systemd/system/ or /usr/lib/systemd/system/ during the attack timeframe. The service name matches the backdoor script.",
+          "cost": 75
+        },
+        {
+          "content": "The persistence mechanism creates a systemd service unit file in the standard system service directory. The unit file name matches the service name reported in systemctl alerts.",
+          "cost": 75
+        },
+        {
+          "content": "The unit file is at /etc/systemd/system/svc_update.service. This is the standard location for administrator-created systemd services.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S4-ALP-12",
+      "name": "[Alpha] Package SHA256 Hash",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Alpha",
+      "description": "What is the SHA256 hash of the malicious wazuhbots-utils package file?\n\nLocate the package hash in pip installation logs, FIM alerts for downloaded package files, or Wazuh alert metadata referencing the package checksum.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "c7a5b3d9e2f14680ab91cd3e4f567890123456789abcdef0123456789abcdef0",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario4",
+        "hash",
+        "sha256",
+        "ioc"
+      ],
+      "hints": [
+        {
+          "content": "pip logs package hashes during installation. Look for pip install verbose output in command monitoring alerts or check FIM alerts for the downloaded .whl or .tar.gz package file.",
+          "cost": 75
+        },
+        {
+          "content": "The SHA256 hash may appear in pip's download cache metadata or in the syscheck alert for the package archive file. Search for alerts containing 'sha256' and 'wazuhbots'.",
+          "cost": 75
+        },
+        {
+          "content": "The SHA256 hash is c7a5b3d9e2f14680ab91cd3e4f567890123456789abcdef0123456789abcdef0. This hash serves as a key IOC for threat intelligence sharing.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S4-FNR-01",
+      "name": "[Fenrir] Multi-Host Correlation Timeline",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Fenrir",
+      "description": "Reconstruct the multi-host attack timeline. Provide the exact timestamps (UTC) when the backdoor was first activated on each host, in chronological order.\n\nFormat: host1:timestamp|host2:timestamp|host3:timestamp\n\nCorrelate the post-install script execution events across all three agents to build the infection timeline.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "web-srv:2026-03-05T02:14:33Z|dc-srv:2026-03-05T06:31:07Z|lnx-srv:2026-03-05T08:45:22Z",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario4",
+        "timeline",
+        "multi-host",
+        "correlation"
+      ],
+      "hints": [
+        {
+          "content": "For each host, find the first process execution event of svc_update.py (the backdoor script). The backdoor is launched by the package's setup.py post_install hook or a cron entry it creates. Check auditd EXECVE events and Wazuh command monitoring.",
+          "cost": 100
+        },
+        {
+          "content": "web-srv was infected first (early morning March 5), dc-srv several hours later (morning), and lnx-srv last (mid-morning). Look at the @timestamp of the first alert containing 'svc_update' or the first DNS tunneling query from each agent.",
+          "cost": 100
+        },
+        {
+          "content": "web-srv: 02:14:33 UTC | dc-srv: 06:31:07 UTC | lnx-srv: 08:45:22 UTC. All on March 5, 2026. The staggered infection corresponds to different CI/CD pipeline schedules on each host.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S4-FNR-02",
+      "name": "[Fenrir] Exfiltration Endpoint and Volume",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Fenrir",
+      "description": "What HTTPS endpoint was used to exfiltrate staged data, and how many total megabytes of data were transferred out across all three hosts?\n\nFormat: https://endpoint/path:total_MB\n\nCorrelate network connection events, outbound HTTPS traffic analysis, and data staging alerts to identify the exfiltration destination and calculate the total volume.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "https://cdn-static.cloud-metrics.net/api/v2/upload:847",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario4",
+        "exfiltration",
+        "https",
+        "data-volume"
+      ],
+      "hints": [
+        {
+          "content": "The exfiltration uses HTTPS POST requests to a URL designed to look like a legitimate CDN upload endpoint. Look for outbound connections to the same domain family as the DNS tunneling C2 (cloud-metrics.net). Check auditd connect events and curl/wget commands.",
+          "cost": 100
+        },
+        {
+          "content": "The staged data was collected in /tmp/.cache/ and /dev/shm/ directories on each host, then exfiltrated via HTTPS. Look for curl commands with -X POST or python requests.post() calls in the command audit logs. Sum the Content-Length or file sizes.",
+          "cost": 100
+        },
+        {
+          "content": "The endpoint is https://cdn-static.cloud-metrics.net/api/v2/upload. Data volumes: web-srv sent 312 MB, dc-srv sent 287 MB, lnx-srv sent 248 MB. Total: 847 MB.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S4-FNR-03",
+      "name": "[Fenrir] Anti-Forensics Logrotate Manipulation",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Fenrir",
+      "description": "The attacker manipulated log rotation to destroy evidence. What specific changes were made to the logrotate configuration, and on which host(s) was the manipulation detected?\n\nFormat: modified_file:change_description:affected_hosts\n\nAnalyze FIM alerts on logrotate configuration files and correlate with any gaps in log continuity across the infrastructure.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "/etc/logrotate.d/wazuh:rotate_0_maxage_1:web-srv,lnx-srv",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario4",
+        "anti-forensics",
+        "logrotate",
+        "evidence-destruction"
+      ],
+      "hints": [
+        {
+          "content": "The attacker modified logrotate configuration files to accelerate log rotation and minimize log retention. Look for FIM alerts on files in /etc/logrotate.d/ or /etc/logrotate.conf across all agents.",
+          "cost": 100
+        },
+        {
+          "content": "The specific modification targeted the Wazuh agent's logrotate config. The attacker changed 'rotate' to 0 (keep no old logs) and set 'maxage' to 1 (delete logs older than 1 day). This was done on hosts where they had root access.",
+          "cost": 100
+        },
+        {
+          "content": "Modified file: /etc/logrotate.d/wazuh. Changes: rotate set to 0 and maxage set to 1. This was detected on web-srv and lnx-srv (where the attacker had root). dc-srv was not modified because the attacker only had domain user access there.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S4-FNR-04",
+      "name": "[Fenrir] Complete Exfil Breakdown Per Host",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Fenrir",
+      "description": "Provide the complete exfiltration volume breakdown showing exactly how many megabytes were exfiltrated from each individual host.\n\nFormat: host1:MB|host2:MB|host3:MB (in alphabetical order by hostname)\n\nCorrelate HTTPS POST transfer sizes or staged file sizes per agent to build the complete exfiltration profile.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "web-srv:312|dc-srv:287|lnx-srv:248",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario4",
+        "exfiltration",
+        "per-host",
+        "data-volume"
+      ],
+      "hints": [
+        {
+          "content": "For each host, sum the file sizes of staged data or the Content-Length of HTTPS POST requests to the exfiltration endpoint. Group the exfiltration alerts by agent.name.",
+          "cost": 100
+        },
+        {
+          "content": "web-srv exfiltrated the most data (database dumps), dc-srv was second (AD/credential data), and lnx-srv was the smallest (config files and SSH keys). The total across all hosts is 847 MB.",
+          "cost": 100
+        },
+        {
+          "content": "web-srv: 312 MB | dc-srv: 287 MB | lnx-srv: 248 MB. The format is host:volume separated by pipes, with values in MB.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S4-FNR-05",
+      "name": "[Fenrir] Infection Delay Pattern",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Fenrir",
+      "description": "What are the time delays (in minutes) between consecutive host infections?\n\nFormat: delay1|delay2 (where delay1 is the gap between the 1st and 2nd host infection, delay2 is between the 2nd and 3rd)\n\nCalculate the precise minute differences between each successive backdoor activation timestamp.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "256|134",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario4",
+        "timeline",
+        "infection-delay",
+        "correlation"
+      ],
+      "hints": [
+        {
+          "content": "Calculate the time difference in minutes between web-srv and dc-srv infection timestamps, then between dc-srv and lnx-srv. The staggered delays correspond to different CI/CD pipeline schedules.",
+          "cost": 100
+        },
+        {
+          "content": "web-srv was infected at 02:14:33Z, dc-srv at 06:31:07Z, and lnx-srv at 08:45:22Z. Calculate the minute differences between these consecutive timestamps.",
+          "cost": 100
+        },
+        {
+          "content": "web-srv to dc-srv: approximately 257 minutes. dc-srv to lnx-srv: approximately 134 minutes. Format: 257|134.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S4-FNR-06",
+      "name": "[Fenrir] Anti-Forensics Host Scope",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Fenrir",
+      "description": "On which specific hosts did the attacker perform anti-forensics activities (logrotate manipulation)?\n\nFormat: host1|host2 (pipe-separated, alphabetical order)\n\nCorrelate FIM alerts on logrotate configuration files across all three agents to determine which hosts were targeted for evidence destruction.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "lnx-srv|web-srv",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario4",
+        "anti-forensics",
+        "host-scope"
+      ],
+      "hints": [
+        {
+          "content": "Search for FIM alerts on /etc/logrotate.d/ files across all three agents. The attacker could only perform anti-forensics on hosts where they had sufficient privileges.",
+          "cost": 100
+        },
+        {
+          "content": "The attacker had root access on two of the three hosts. On the third host (dc-srv), the attacker only had domain user privileges and could not modify system configuration files.",
+          "cost": 100
+        },
+        {
+          "content": "Anti-forensics was performed on web-srv and lnx-srv only. dc-srv was excluded because the attacker lacked root privileges there.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S4-FNR-07",
+      "name": "[Fenrir] DNS Subdomain Encoding Length",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Fenrir",
+      "description": "What is the character length of the encoded subdomain labels used in DNS tunneling queries?\n\nAnalyze the DNS tunneling query patterns and measure the consistent length of the encoded data portion in the subdomain labels.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "32",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario4",
+        "dns-tunneling",
+        "encoding",
+        "subdomain"
+      ],
+      "hints": [
+        {
+          "content": "Extract several DNS tunneling query hostnames and isolate the encoded data portion (the leftmost subdomain label). Measure its character length consistently across multiple queries.",
+          "cost": 100
+        },
+        {
+          "content": "The encoded subdomain labels use a fixed-length encoding scheme. The length is consistent across all DNS tunnel queries and is a power of 2.",
+          "cost": 100
+        },
+        {
+          "content": "Each encoded subdomain label is exactly 32 characters long. This is consistent with hex-encoded 16-byte (128-bit) data blocks used in the DNS tunneling protocol.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S4-FNR-08",
+      "name": "[Fenrir] Complete C2 Domain Family",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Fenrir",
+      "description": "List all domains in the attacker's C2 infrastructure used during this attack.\n\nFormat: domain1|domain2 (pipe-separated, alphabetical order)\n\nCorrelate DNS queries, outbound HTTPS connections, and network alerts to identify every unique domain used for command and control or data exfiltration.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "cdn-analytics.cloud-metrics.net|cdn-static.cloud-metrics.net",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario4",
+        "c2",
+        "domain-family",
+        "ioc"
+      ],
+      "hints": [
+        {
+          "content": "The attacker used multiple subdomains under the same parent domain for different purposes (C2 vs exfiltration). Search for all unique base domains in DNS and HTTPS connection alerts related to the attack.",
+          "cost": 100
+        },
+        {
+          "content": "Two domains were used: one for DNS tunneling C2 communication and another for HTTPS data exfiltration. Both share the same parent domain (cloud-metrics.net) with different CDN-themed subdomains.",
+          "cost": 100
+        },
+        {
+          "content": "The complete C2 domain family is: cdn-analytics.cloud-metrics.net (DNS tunneling) and cdn-static.cloud-metrics.net (HTTPS exfiltration). List them pipe-separated in alphabetical order.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S4-FNR-09",
+      "name": "[Fenrir] Full MITRE Technique Chain",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Fenrir",
+      "description": "List every MITRE ATT&CK technique ID used throughout the entire Supply Chain Phantom attack, in ascending order.\n\nFormat: T####|T####.###|... (pipe-separated, sorted ascending)\n\nCorrelate the rule.mitre.id field across all supply chain related alerts to build the complete technique mapping.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "T1041|T1059.006|T1070|T1071.004|T1074.001|T1195.001|T1543.002",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario4",
+        "mitre",
+        "technique-chain",
+        "kill-chain"
+      ],
+      "hints": [
+        {
+          "content": "Aggregate all unique rule.mitre.id values from alerts tagged with scenario 4. The attack uses techniques spanning Initial Access, Execution, Persistence, Defense Evasion, Collection, C2, and Exfiltration.",
+          "cost": 100
+        },
+        {
+          "content": "The 7 techniques cover: supply chain compromise (Initial Access), Python execution (Execution), indicator removal (Defense Evasion), DNS tunneling (C2), data staging (Collection), systemd persistence (Persistence), and exfiltration over C2 (Exfiltration).",
+          "cost": 100
+        },
+        {
+          "content": "The complete chain is: T1041 (Exfiltration Over C2) | T1059.006 (Python) | T1070 (Indicator Removal) | T1071.004 (DNS) | T1074.001 (Local Data Staging) | T1195.001 (Supply Chain) | T1543.002 (Systemd Service). Sort ascending.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S4-FNR-10",
+      "name": "[Fenrir] Backdoor MD5 Hash",
+      "category": "Scenario 4: Supply Chain Phantom",
+      "level": "Fenrir",
+      "description": "What is the MD5 hash of the svc_update.py backdoor script?\n\nLocate the MD5 hash in FIM syscheck alerts for the backdoor file, or in Wazuh alert metadata referencing the file's cryptographic hash.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "e99a18c428cb38d5f260853678922e03",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario4",
+        "hash",
+        "md5",
+        "ioc",
+        "backdoor"
+      ],
+      "hints": [
+        {
+          "content": "FIM syscheck alerts include cryptographic hashes (MD5, SHA1, SHA256) for monitored files. Search for FIM alerts related to svc_update.py and extract the MD5 hash from the alert data.",
+          "cost": 100
+        },
+        {
+          "content": "Look at the syscheck.md5_after or data.syscheck.md5_after field in the FIM alert for the backdoor file creation event. The hash is a standard 32-character hexadecimal string.",
+          "cost": 100
+        },
+        {
+          "content": "The MD5 hash of svc_update.py is e99a18c428cb38d5f260853678922e03. This hash can be used as an IOC to check if the backdoor exists on other systems.",
+          "cost": 100
+        }
+      ]
+    }
+  ]
+}

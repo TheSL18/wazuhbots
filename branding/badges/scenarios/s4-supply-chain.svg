@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 80" fill="none">
+  <defs>
+    <linearGradient id="s4g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#eab308"/>
+    </linearGradient>
+  </defs>
+  <rect width="280" height="80" rx="12" fill="#0a0e17" stroke="#f59e0b" stroke-width="1.5" stroke-opacity="0.4"/>
+  <!-- Scenario icon: chain/supply -->
+  <g transform="translate(40,40)">
+    <circle r="22" fill="#f59e0b" opacity="0.12"/>
+    <!-- Chain links -->
+    <ellipse cx="-6" cy="-4" rx="8" ry="5" fill="none" stroke="#f59e0b" stroke-width="1.8" opacity="0.7"/>
+    <ellipse cx="6" cy="4" rx="8" ry="5" fill="none" stroke="#f59e0b" stroke-width="1.8" opacity="0.7"/>
+    <!-- Break mark -->
+    <line x1="2" y1="-4" x2="-2" y2="4" stroke="#ef4444" stroke-width="2" opacity="0.8"/>
+    <!-- Warning triangle -->
+    <polygon points="0,-14 -4,-8 4,-8" fill="none" stroke="#f59e0b" stroke-width="1.2" opacity="0.6"/>
+    <text x="0" y="-9.5" text-anchor="middle" font-family="sans-serif" font-size="4" font-weight="700" fill="#f59e0b" opacity="0.8">!</text>
+  </g>
+  <text x="76" y="30" font-family="'Segoe UI',system-ui,sans-serif" font-size="11"
+        font-weight="700" letter-spacing="2" fill="#f59e0b" opacity="0.8">SCENARIO 4</text>
+  <text x="76" y="52" font-family="'Segoe UI',system-ui,sans-serif" font-size="20"
+        font-weight="800" fill="#e2e8f0">Supply Chain</text>
+  <text x="76" y="68" font-family="'SF Mono',monospace" font-size="10" fill="#94a3b8">Advanced Persistent Threat</text>
+  <g transform="translate(232,12)">
+    <rect width="36" height="18" rx="9" fill="#f59e0b" opacity="0.15" stroke="#f59e0b" stroke-width="0.8" stroke-opacity="0.3"/>
+    <text x="18" y="12.5" text-anchor="middle" font-family="monospace" font-size="9" font-weight="700" fill="#f59e0b">S4</text>
+  </g>
+</svg>

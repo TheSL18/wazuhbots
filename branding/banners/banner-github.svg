@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0e17"/>
+      <stop offset="50%" stop-color="#0f1629"/>
+      <stop offset="100%" stop-color="#0a0e17"/>
+    </linearGradient>
+    <linearGradient id="wolfGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="50%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5" opacity="0.3"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1280" height="320" fill="url(#bgGrad)"/>
+  <rect width="1280" height="320" fill="url(#grid)" opacity="0.4"/>
+
+  <!-- Radial glow accents -->
+  <circle cx="200" cy="160" r="200" fill="#3b82f6" opacity="0.04"/>
+  <circle cx="1080" cy="160" r="200" fill="#06b6d4" opacity="0.03"/>
+
+  <!-- Top border accent -->
+  <rect x="0" y="0" width="1280" height="3" fill="url(#wolfGrad)" opacity="0.6"/>
+
+  <!-- Left: Shield + Wolf -->
+  <g transform="translate(160,160) scale(1.3)">
+    <path d="M0,-75 L68,-50 L68,30 L0,85 L-68,30 L-68,-50 Z"
+          fill="none" stroke="url(#wolfGrad)" stroke-width="2" opacity="0.3"/>
+    <path d="M0,-65 L58,-43 L58,25 L0,72 L-58,25 L-58,-43 Z"
+          fill="#3b82f6" opacity="0.05"/>
+
+    <g filter="url(#glow)">
+      <polygon points="-38,-35 -22,-55 -14,-25" fill="url(#wolfGrad)" opacity="0.85"/>
+      <polygon points="38,-35 22,-55 14,-25" fill="url(#wolfGrad)" opacity="0.85"/>
+      <polygon points="-22,-35 0,-45 22,-35 18,-15 0,-22 -18,-15" fill="url(#wolfGrad)" opacity="0.8"/>
+      <polygon points="-18,-15 0,-22 -5,8 -35,10 -40,-12" fill="url(#wolfGrad)" opacity="0.7"/>
+      <polygon points="18,-15 0,-22 5,8 35,10 40,-12" fill="url(#wolfGrad)" opacity="0.7"/>
+      <polygon points="-35,10 -5,8 -10,30 -28,26" fill="url(#wolfGrad)" opacity="0.6"/>
+      <polygon points="35,10 5,8 10,30 28,26" fill="url(#wolfGrad)" opacity="0.6"/>
+      <polygon points="-28,26 -10,30 0,48 10,30 28,26 0,62" fill="url(#wolfGrad)" opacity="0.45"/>
+    </g>
+    <!-- Eyes -->
+    <polygon points="-30,-10 -18,-14 -17,-4 -30,-2" fill="#06b6d4" filter="url(#glow)"/>
+    <polygon points="30,-10 18,-14 17,-4 30,-2" fill="#06b6d4" filter="url(#glow)"/>
+    <circle cx="-23" cy="-8" r="3" fill="#0a0e17"/>
+    <circle cx="23" cy="-8" r="3" fill="#0a0e17"/>
+    <circle cx="-22" cy="-9.5" r="1.3" fill="#fff" opacity="0.8"/>
+    <circle cx="24" cy="-9.5" r="1.3" fill="#fff" opacity="0.8"/>
+  </g>
+
+  <!-- Center: Text -->
+  <text x="480" y="130" font-family="'Segoe UI','SF Pro Display',system-ui,sans-serif"
+        font-size="80" font-weight="800" letter-spacing="-2" fill="url(#textGrad)">
+    Wazuh<tspan fill="#e2e8f0" font-weight="900">BOTS</tspan>
+  </text>
+
+  <text x="484" y="170" font-family="'Segoe UI',system-ui,sans-serif"
+        font-size="20" font-weight="600" letter-spacing="8" fill="#94a3b8">
+    BOSS OF THE SOC
+  </text>
+
+  <rect x="484" y="184" width="240" height="2" rx="1" fill="url(#wolfGrad)" opacity="0.4"/>
+
+  <!-- Tagline -->
+  <text x="484" y="212" font-family="'Segoe UI',system-ui,sans-serif"
+        font-size="16" fill="#64748b">
+    Open-source CTF platform powered by Wazuh SIEM
+  </text>
+
+  <!-- Right side: scenario pills -->
+  <g transform="translate(484,238)">
+    <rect x="0" y="0" width="100" height="26" rx="13" fill="#ef4444" opacity="0.12" stroke="#ef4444" stroke-width="0.8" stroke-opacity="0.3"/>
+    <text x="50" y="17" text-anchor="middle" font-family="'SF Mono',monospace" font-size="10" font-weight="600" fill="#ef4444">Dark Harvest</text>
+
+    <rect x="112" y="0" width="80" height="26" rx="13" fill="#a855f7" opacity="0.12" stroke="#a855f7" stroke-width="0.8" stroke-opacity="0.3"/>
+    <text x="152" y="17" text-anchor="middle" font-family="'SF Mono',monospace" font-size="10" font-weight="600" fill="#a855f7">Iron Gate</text>
+
+    <rect x="204" y="0" width="90" height="26" rx="13" fill="#22c55e" opacity="0.12" stroke="#22c55e" stroke-width="0.8" stroke-opacity="0.3"/>
+    <text x="249" y="17" text-anchor="middle" font-family="'SF Mono',monospace" font-size="10" font-weight="600" fill="#22c55e">Ghost Shell</text>
+
+    <rect x="306" y="0" width="100" height="26" rx="13" fill="#f59e0b" opacity="0.12" stroke="#f59e0b" stroke-width="0.8" stroke-opacity="0.3"/>
+    <text x="356" y="17" text-anchor="middle" font-family="'SF Mono',monospace" font-size="10" font-weight="600" fill="#f59e0b">Supply Chain</text>
+  </g>
+
+  <!-- Stats -->
+  <g transform="translate(484,282)">
+    <text font-family="'SF Mono',monospace" font-size="12" fill="#3b82f6" font-weight="700">
+      <tspan x="0" dy="0">150</tspan><tspan fill="#64748b" font-weight="400"> challenges</tspan>
+      <tspan dx="20" fill="#06b6d4" font-weight="700">4</tspan><tspan fill="#64748b" font-weight="400"> scenarios</tspan>
+      <tspan dx="20" fill="#22c55e" font-weight="700">95.7K</tspan><tspan fill="#64748b" font-weight="400"> events</tspan>
+      <tspan dx="20" fill="#f59e0b" font-weight="700">MIT</tspan><tspan fill="#64748b" font-weight="400"> license</tspan>
+    </text>
+  </g>
+
+  <!-- Decorative circuit lines -->
+  <g stroke="#3b82f6" stroke-width="1" opacity="0.15">
+    <line x1="0" y1="316" x2="1280" y2="316"/>
+    <line x1="330" y1="40" x2="330" y2="280"/>
+    <circle cx="330" cy="40" r="3" fill="#3b82f6"/>
+    <circle cx="330" cy="280" r="3" fill="#06b6d4"/>
+  </g>
+
+  <!-- Corner decorations -->
+  <g stroke="#3b82f6" stroke-width="1" opacity="0.2">
+    <polyline points="20,20 20,40 40,40"/>
+    <polyline points="1260,20 1260,40 1240,40"/>
+    <polyline points="20,300 20,280 40,280"/>
+    <polyline points="1260,300 1260,280 1240,280"/>
+  </g>
+</svg>

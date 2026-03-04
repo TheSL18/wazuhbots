@@ -1,0 +1,12 @@
+# Packer build output
+output/
+
+# Variable overrides (may contain sensitive values)
+*.auto.pkrvars.hcl
+
+# Packer crash logs
+crash.log
+
+# Temporary files
+*.tmp
+.packer_plugins_lock.json

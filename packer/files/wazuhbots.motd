@@ -1,0 +1,21 @@
+
+ __        __                _     ____   ___ _____ ____
+ \ \      / /_ _ _____   _| |__ | __ ) / _ \_   _/ ___|
+  \ \ /\ / / _` |_  / | | | '_ \|  _ \| | | || | \___ \
+   \ V  V / (_| |/ /| |_| | | | | |_) | |_| || |  ___) |
+    \_/\_/ \__,_/___|\__,_|_| |_|____/ \___/ |_| |____/
+
+  Boss of the SOC — Powered by Wazuh
+  Created by MrHacker (Kevin Munoz) | Wazuh Technology Ambassador
+
+  ┌──────────────────────────────────────────────────────────┐
+  │  Wazuh Dashboard .... https://<IP>:5601                  │
+  │  CTFd Platform ...... http://<IP>:8000                   │
+  │  Nginx Proxy ........ https://<IP>:8443                  │
+  │                                                          │
+  │  Credentials ........ cat /opt/wazuhbots/.env            │
+  │  Participant ........ analyst / WazuhBOTS2026!           │
+  │  Stack status ....... docker compose ps                  │
+  │  First-boot log ..... journalctl -u wazuhbots-firstboot  │
+  └──────────────────────────────────────────────────────────┘
+

@@ -1,0 +1,1379 @@
+{
+  "scenario": {
+    "id": 2,
+    "name": "Operation Iron Gate",
+    "codename": "iron_gate",
+    "category": "Scenario 2: Iron Gate",
+    "description": "A spearphishing attack against a corporate user leads to credential harvesting, lateral movement through Active Directory, Kerberoasting, and ultimately ransomware deployment. Investigate using Windows Security Event logs, Sysmon telemetry, and Wazuh alerts on dc-srv.",
+    "victim_host": "dc-srv",
+    "attack_timeframe": "2026-03-02T06:00:00Z to 2026-03-02T20:00:00Z",
+    "kill_chain_summary": [
+      "Spearphishing email with malicious macro document",
+      "Macro execution spawning PowerShell payload",
+      "Credential dumping with Mimikatz (LSASS memory access)",
+      "Kerberoasting attack against service accounts",
+      "Lateral movement via PsExec and WMI",
+      "Ransomware deployment and encryption activity"
+    ]
+  },
+  "challenges": [
+    {
+      "id": "S2-PUP-01",
+      "name": "[Pup] Phishing Target User",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Pup",
+      "description": "Which user account received the initial spearphishing email that started the Iron Gate compromise?\n\nLook at the earliest alerts on dc-srv related to suspicious process creation or email-related events to identify the targeted user.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "jmartin",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario2",
+        "phishing",
+        "user-account"
+      ],
+      "hints": [
+        {
+          "content": "Look for the first suspicious process creation (Sysmon Event ID 1) or Office application spawning a child process. The user field in the event will reveal who opened the malicious document.",
+          "cost": 25
+        },
+        {
+          "content": "Search for alerts where data.win.eventdata.parentImage contains 'WINWORD.EXE' or 'EXCEL.EXE'. The user context of that process is the phishing target.",
+          "cost": 25
+        },
+        {
+          "content": "The user's username follows the format: first initial + last name (e.g., jdoe). The last name starts with 'M'.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S2-PUP-02",
+      "name": "[Pup] Initial Payload Host IP",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Pup",
+      "description": "What is the IP address of the host that executed the initial malicious payload (macro) from the phishing document?\n\nIdentify the workstation where the compromise began.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "172.25.0.104",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario2",
+        "ip-address",
+        "initial-access"
+      ],
+      "hints": [
+        {
+          "content": "Look at the agent.ip or data.win.eventdata.sourceIp field in the earliest alerts related to macro execution on dc-srv.",
+          "cost": 25
+        },
+        {
+          "content": "The host is on the internal WazuhBOTS network (172.25.0.0/24 subnet). Check Sysmon Event ID 1 (Process Create) alerts for the macro-spawned process.",
+          "cost": 25
+        },
+        {
+          "content": "The IP address is in the 172.25.0.100-110 range, assigned to a workstation in the simulated environment.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S2-PUP-03",
+      "name": "[Pup] Suspicious Process Rule ID",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Pup",
+      "description": "What Wazuh rule ID (rule.id) generated the alert for the suspicious process spawned by the malicious macro?\n\nIdentify the specific Wazuh rule that fired when the Office application launched an unexpected child process.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "92052",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario2",
+        "rule-id",
+        "sysmon"
+      ],
+      "hints": [
+        {
+          "content": "Wazuh has built-in Sysmon rules that detect Office applications spawning suspicious child processes. Look for rules in the 92000+ range.",
+          "cost": 25
+        },
+        {
+          "content": "Filter alerts by agent.name: dc-srv and look for rule.description containing 'Office application' or 'suspicious child process'. The rule.id will be in the 92050-92060 range.",
+          "cost": 25
+        },
+        {
+          "content": "Rule 92052 detects 'Sysmon - Suspicious Process - Office application spawning suspicious process'. This is a Wazuh Sysmon detection rule.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S2-PUP-04",
+      "name": "[Pup] High-Severity Alert Count",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Pup",
+      "description": "How many alerts with rule.level >= 10 (High severity) were generated on dc-srv during the Iron Gate attack scenario?\n\nUse the Wazuh Dashboard to filter alerts by agent name and severity level for the attack date (2026-03-02).",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "22",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario2",
+        "alert-count",
+        "high-severity"
+      ],
+      "hints": [
+        {
+          "content": "In the Wazuh Dashboard, filter by agent.name: dc-srv and add a filter for rule.level >= 10. Make sure the time range covers the full attack date (2026-03-02).",
+          "cost": 25
+        },
+        {
+          "content": "High-severity alerts (level 10+) represent the most critical detections. Use a range filter on rule.level with 'gte' (greater than or equal to) 10.",
+          "cost": 25
+        },
+        {
+          "content": "The count is a two-digit number. These are the alerts that matter most for the investigation.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S2-PUP-05",
+      "name": "[Pup] Active Directory Domain",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Pup",
+      "description": "What is the Active Directory domain name used in the Iron Gate environment?\n\nExamine the Windows Security Event logs for domain-related fields to identify the AD domain under attack.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "wazuhbots.local",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario2",
+        "active-directory",
+        "domain"
+      ],
+      "hints": [
+        {
+          "content": "Active Directory domain names appear in authentication events (Event ID 4624, 4625) under fields like SubjectDomainName or TargetDomainName.",
+          "cost": 25
+        },
+        {
+          "content": "Look at any Kerberos event (Event ID 4768, 4769) or logon event. The domain name follows the format: projectname.local.",
+          "cost": 25
+        },
+        {
+          "content": "The domain is named after the project itself. It ends with '.local' as is common in internal AD environments.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S2-PUP-06",
+      "name": "[Pup] Compromised Workstation Name",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Pup",
+      "description": "What is the hostname of the initial workstation that was compromised via the phishing attack?\n\nIdentify the computer name where the malicious macro was first executed by the targeted user.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "WS-FINANCE01",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario2",
+        "hostname",
+        "workstation"
+      ],
+      "hints": [
+        {
+          "content": "Check the data.win.system.computer or data.win.eventdata.workstationName field in the earliest process creation alerts for the phishing victim.",
+          "cost": 25
+        },
+        {
+          "content": "The workstation follows a naming convention: WS-DEPARTMENT## where the department indicates the business unit of the compromised user.",
+          "cost": 25
+        },
+        {
+          "content": "The compromised user jmartin works in the Finance department. The workstation name starts with 'WS-FINANCE'.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S2-PUP-07",
+      "name": "[Pup] Sysmon Event Channel",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Pup",
+      "description": "What is the Windows Event Log channel name that Sysmon events are recorded under?\n\nIdentify the log channel from which Wazuh collects Sysmon telemetry on the Windows hosts.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "Microsoft-Windows-Sysmon/Operational",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario2",
+        "sysmon",
+        "event-channel"
+      ],
+      "hints": [
+        {
+          "content": "Look at the data.win.system.channel field in any Sysmon alert. This field identifies the Windows Event Log channel where the events originate.",
+          "cost": 25
+        },
+        {
+          "content": "Sysmon logs are stored under a vendor-specific channel. The format follows Microsoft's standard: Microsoft-Windows-<ProductName>/Operational.",
+          "cost": 25
+        },
+        {
+          "content": "The channel name is 'Microsoft-Windows-Sysmon/Operational'. This is the standard channel for all Sysmon event types (Event IDs 1-29).",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S2-PUP-08",
+      "name": "[Pup] Ransomware FIM Event Count",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Pup",
+      "description": "How many File Integrity Monitoring (FIM) events were generated during the ransomware encryption phase?\n\nCount the FIM alerts triggered by rapid file modifications when the ransomware began encrypting files on dc-srv.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "20",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario2",
+        "fim",
+        "ransomware",
+        "count"
+      ],
+      "hints": [
+        {
+          "content": "Filter alerts by rule.groups containing 'syscheck' or 'fim' on dc-srv during the ransomware deployment timeframe (late in the attack timeline).",
+          "cost": 25
+        },
+        {
+          "content": "FIM events for ransomware will show file extension changes (e.g., .docx -> .locked). Count alerts where syscheck.event is 'modified' and the file path shows encryption activity.",
+          "cost": 25
+        },
+        {
+          "content": "The ransomware triggered exactly 20 FIM events as it encrypted files across multiple directories.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S2-PUP-09",
+      "name": "[Pup] PowerShell Logging Event ID",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Pup",
+      "description": "What Windows Event ID is used for PowerShell ScriptBlock Logging, which captured the attacker's malicious PowerShell commands?\n\nIdentify the Event ID that records the content of PowerShell scripts as they execute.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "4104",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario2",
+        "powershell",
+        "event-id",
+        "logging"
+      ],
+      "hints": [
+        {
+          "content": "PowerShell has several logging Event IDs: 4103 (Module Logging), 4104 (ScriptBlock Logging), and 4105/4106 (Start/Stop). ScriptBlock logging captures the actual script content.",
+          "cost": 25
+        },
+        {
+          "content": "The Event ID that records the full text of PowerShell scripts (including AMSI bypass commands and Mimikatz invocations) is in the 4100-4110 range.",
+          "cost": 25
+        },
+        {
+          "content": "Event ID 4104 is ScriptBlock Logging. It captures the deobfuscated content of PowerShell scripts, making it invaluable for detecting malicious activity.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S2-PUP-10",
+      "name": "[Pup] Ransomware File Extension",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Pup",
+      "description": "What file extension did the ransomware append to encrypted files?\n\nExamine the FIM alerts or Sysmon file creation events to identify the extension used by the ransomware during the encryption phase.",
+      "value": 100,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": ".locked",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "pup",
+        "scenario2",
+        "ransomware",
+        "file-extension",
+        "ioc"
+      ],
+      "hints": [
+        {
+          "content": "Look at FIM (syscheck) alerts or Sysmon Event ID 2 (File creation time change) / Event ID 11 (File Create) during the ransomware phase. The new file extension will be visible in the filename.",
+          "cost": 25
+        },
+        {
+          "content": "Ransomware typically renames files by appending a custom extension. Check syscheck.path or data.win.eventdata.targetFilename for the pattern: originalfile.ext -> originalfile.ext.SOMETHING.",
+          "cost": 25
+        },
+        {
+          "content": "The ransomware extension starts with a dot and describes what happened to the files. It is a common English word meaning 'secured/inaccessible'.",
+          "cost": 25
+        }
+      ]
+    },
+    {
+      "id": "S2-HNT-01",
+      "name": "[Hunter] Credential Dumping Tool",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Hunter",
+      "description": "What executable was used for credential dumping on dc-srv? Provide the full filename of the tool.\n\nCorrelate process creation events with LSASS memory access alerts to identify the credential theft tool.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "mimikatz.exe",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario2",
+        "credential-dumping",
+        "mimikatz"
+      ],
+      "hints": [
+        {
+          "content": "Look for Sysmon Event ID 10 (Process Access) alerts where the TargetImage is lsass.exe. The SourceImage field reveals the tool used for credential dumping.",
+          "cost": 50
+        },
+        {
+          "content": "The tool is the most well-known Windows credential dumping utility, created by Benjamin Delpy. It was either run directly or renamed. Check the original filename in Sysmon Event ID 1 data.",
+          "cost": 50
+        },
+        {
+          "content": "Search for alerts containing 'LSASS' or 'credential' in the rule.description. The tool name is 'mimikatz.exe' and it accessed lsass.exe process memory.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S2-HNT-02",
+      "name": "[Hunter] Lateral Movement Host Count",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Hunter",
+      "description": "How many unique hosts were contacted during the lateral movement phase of the Iron Gate attack?\n\nAnalyze network connection events and remote service creation alerts to count the number of systems the attacker moved to.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "4",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario2",
+        "lateral-movement",
+        "count"
+      ],
+      "hints": [
+        {
+          "content": "Look for Windows Event ID 4648 (Logon with explicit credentials), Sysmon Event ID 3 (Network Connections) to SMB/WMI ports, and remote service installation events from the compromised account.",
+          "cost": 50
+        },
+        {
+          "content": "The lateral movement used PsExec (port 445) and WMI (port 135/5985). Count unique destination IPs in these connection events. Exclude the source host itself.",
+          "cost": 50
+        },
+        {
+          "content": "The attacker moved to 4 additional hosts after the initial compromise. Count unique DestinationIp values in Sysmon Event ID 3 where the source process is PsExec or wmiprvse.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S2-HNT-03",
+      "name": "[Hunter] Kerberoasting Target SPN",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Hunter",
+      "description": "What Service Principal Name (SPN) was targeted during the Kerberoasting attack?\n\nAnalyze Kerberos service ticket request events to identify the specific service account the attacker attempted to crack.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "MSSQLSvc/db-srv.wazuhbots.local:1433",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario2",
+        "kerberoasting",
+        "spn",
+        "active-directory"
+      ],
+      "hints": [
+        {
+          "content": "Kerberoasting involves requesting TGS tickets for service accounts with SPNs. Look for Windows Event ID 4769 (Kerberos Service Ticket Request) with unusual encryption types.",
+          "cost": 50
+        },
+        {
+          "content": "Filter for Event ID 4769 where the ticket encryption type is 0x17 (RC4-HMAC), which is commonly used in Kerberoasting because RC4 tickets are easier to crack offline.",
+          "cost": 50
+        },
+        {
+          "content": "The targeted SPN belongs to a SQL Server service account. The format is MSSQLSvc/hostname.domain:port. Look for the ServiceName field in Event ID 4769.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S2-HNT-04",
+      "name": "[Hunter] Mimikatz File Path",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Hunter",
+      "description": "What is the full file path where the Mimikatz executable was dropped on the compromised system?\n\nAnalyze Sysmon Event ID 1 (Process Create) or Event ID 11 (File Create) to find the exact location where the credential dumping tool was written to disk.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "C:\\Users\\jmartin\\AppData\\Local\\Temp\\mimikatz.exe",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario2",
+        "mimikatz",
+        "file-path",
+        "ioc"
+      ],
+      "hints": [
+        {
+          "content": "Look for Sysmon Event ID 1 where the Image field contains 'mimikatz'. The full path will show where the attacker placed the binary before execution.",
+          "cost": 50
+        },
+        {
+          "content": "Attackers commonly drop tools in temporary directories to avoid detection. Check the compromised user's AppData\\Local\\Temp directory in the Sysmon process creation events.",
+          "cost": 50
+        },
+        {
+          "content": "The binary was dropped in the compromised user jmartin's temp folder. The path follows the standard Windows user temp pattern: C:\\Users\\<username>\\AppData\\Local\\Temp\\.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S2-HNT-05",
+      "name": "[Hunter] LSASS Access Mask",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Hunter",
+      "description": "What is the GrantedAccess value observed when Mimikatz accessed the LSASS process for credential dumping?\n\nExamine Sysmon Event ID 10 (Process Access) alerts where LSASS was the target to identify the specific access rights requested.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "0x1010",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario2",
+        "lsass",
+        "process-access",
+        "credential-dumping"
+      ],
+      "hints": [
+        {
+          "content": "Sysmon Event ID 10 records process access events. Filter for events where TargetImage is 'C:\\Windows\\System32\\lsass.exe' and examine the GrantedAccess field.",
+          "cost": 50
+        },
+        {
+          "content": "Common LSASS access masks for credential dumping include 0x1010, 0x1410, and 0x1FFFFF. The specific value depends on the tool and technique used. This attack used a minimal access mask.",
+          "cost": 50
+        },
+        {
+          "content": "The GrantedAccess value 0x1010 corresponds to PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_VM_READ, which is the minimum access needed to read credentials from LSASS memory.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S2-HNT-06",
+      "name": "[Hunter] First Lateral Target IP",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Hunter",
+      "description": "What is the IP address of the first host the attacker moved to laterally after the initial compromise?\n\nAnalyze the chronological sequence of network connections and remote logon events to identify the first lateral movement target.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "172.26.0.30",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario2",
+        "lateral-movement",
+        "ip-address",
+        "network"
+      ],
+      "hints": [
+        {
+          "content": "Look for the earliest Sysmon Event ID 3 (Network Connection) or Windows Event ID 4648 (Logon with explicit credentials) after the credential dumping phase. Sort by timestamp to find the first remote connection.",
+          "cost": 50
+        },
+        {
+          "content": "The attacker used PsExec or WMI to move laterally. Check for connections to port 445 (SMB) or port 135/5985 (WMI/WinRM) sorted chronologically. The first destination IP is the answer.",
+          "cost": 50
+        },
+        {
+          "content": "The first lateral target is a host on the 172.26.0.0/24 network. It is the web server (web-srv) at 172.26.0.30.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S2-HNT-07",
+      "name": "[Hunter] Ransomware Process Path",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Hunter",
+      "description": "What is the full file path of the ransomware executable that was deployed on dc-srv?\n\nIdentify the process image path from Sysmon Event ID 1 or the alerts associated with the ransomware detection rule.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "C:\\Windows\\Temp\\payload.exe",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario2",
+        "ransomware",
+        "process-path",
+        "ioc"
+      ],
+      "hints": [
+        {
+          "content": "Look at Sysmon Event ID 1 (Process Create) events that occurred just before the ransomware detection rule (87905) fired. The Image field contains the full path.",
+          "cost": 50
+        },
+        {
+          "content": "The ransomware binary was placed in a system-writable temporary directory that does not require elevated privileges to access. Check C:\\Windows\\Temp\\ in the process creation events.",
+          "cost": 50
+        },
+        {
+          "content": "The executable has a generic name suggesting it is a payload dropped by the attacker. The path is C:\\Windows\\Temp\\ and the filename is 'payload.exe'.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S2-HNT-08",
+      "name": "[Hunter] Ransom Note Filename",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Hunter",
+      "description": "What is the filename of the ransom note dropped by the ransomware on dc-srv?\n\nExamine FIM alerts or Sysmon file creation events to identify the ransom note file created in encrypted directories.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "DECRYPT_FILES.txt",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario2",
+        "ransomware",
+        "ransom-note",
+        "ioc"
+      ],
+      "hints": [
+        {
+          "content": "Ransomware typically creates a text file in each encrypted directory with instructions for paying the ransom. Look for Sysmon Event ID 11 (File Create) or FIM events creating .txt or .html files during the encryption phase.",
+          "cost": 50
+        },
+        {
+          "content": "The ransom note filename is in ALL CAPS with underscores. It describes the action the victim needs to take with their files.",
+          "cost": 50
+        },
+        {
+          "content": "The filename starts with 'DECRYPT' and has a .txt extension. It was created in every directory where files were encrypted.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S2-HNT-09",
+      "name": "[Hunter] Kerberos Encryption Type",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Hunter",
+      "description": "What Kerberos encryption type was used in the Kerberoasting attack, indicating an encryption downgrade?\n\nExamine the Event ID 4769 events to identify the ticket encryption type that signals a potential Kerberoasting attempt.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "0x17",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario2",
+        "kerberoasting",
+        "encryption",
+        "active-directory"
+      ],
+      "hints": [
+        {
+          "content": "In Kerberoasting, attackers request TGS tickets with a weaker encryption type that can be cracked offline. Look at the TicketEncryptionType field in Event ID 4769.",
+          "cost": 50
+        },
+        {
+          "content": "The encryption type 0x17 corresponds to RC4-HMAC. Modern environments should use AES (0x11 or 0x12). RC4 requests for service accounts are a strong indicator of Kerberoasting.",
+          "cost": 50
+        },
+        {
+          "content": "The value is a hex number: 0x17. In decimal this is 23, which maps to RC4-HMAC-MD5 encryption in the Kerberos specification.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S2-HNT-10",
+      "name": "[Hunter] Malicious Service Name",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Hunter",
+      "description": "What is the name of the Windows service that was installed by the attacker for persistence?\n\nExamine Windows Event ID 7045 (Service Installation) to identify the malicious service created during the attack.",
+      "value": 200,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "SvcUpdate",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "hunter",
+        "scenario2",
+        "persistence",
+        "service-installation",
+        "ioc"
+      ],
+      "hints": [
+        {
+          "content": "Windows Event ID 7045 records new service installations. Look for services installed during the attack timeframe that point to executables in unusual locations like C:\\Windows\\Temp\\.",
+          "cost": 50
+        },
+        {
+          "content": "The service name is designed to look legitimate, mimicking a system update service. Check the ServiceName field in Event ID 7045 and correlate the ServiceFileName with known malicious paths.",
+          "cost": 50
+        },
+        {
+          "content": "The service is named 'SvcUpdate' and its binary path points to C:\\Windows\\Temp\\svc_update.exe. The naming convention is meant to blend in with legitimate Windows services.",
+          "cost": 50
+        }
+      ]
+    },
+    {
+      "id": "S2-ALP-01",
+      "name": "[Alpha] Pass-the-Hash Event ID",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Alpha",
+      "description": "Identify the specific Windows Security Event ID that correlates with the Pass-the-Hash activity observed during the Iron Gate attack.\n\nAnalyze the authentication events to find the event that indicates NTLM authentication was used with a hash rather than a password.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "4624",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario2",
+        "pass-the-hash",
+        "windows-event-id"
+      ],
+      "hints": [
+        {
+          "content": "Pass-the-Hash results in a successful logon event, but with specific characteristics. The logon type and authentication package fields are key indicators.",
+          "cost": 75
+        },
+        {
+          "content": "Look for Event ID 4624 (Successful Logon) where LogonType is 9 (NewCredentials) or 3 (Network) AND the AuthenticationPackageName is NTLM, AND the LogonProcessName is 'NtLmSsp'.",
+          "cost": 75
+        },
+        {
+          "content": "Event ID 4624 with LogonType 3 and NTLM authentication package, combined with a blank or missing workstation name, is the primary indicator of Pass-the-Hash authentication.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S2-ALP-02",
+      "name": "[Alpha] Ransomware Detection Rule",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Alpha",
+      "description": "What is the rule ID of the Wazuh rule with level >= 12 that fired during the ransomware deployment phase?\n\nIdentify the high-severity Wazuh rule that detected the ransomware encryption behavior on dc-srv.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "87905",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario2",
+        "ransomware",
+        "custom-rules",
+        "high-severity"
+      ],
+      "hints": [
+        {
+          "content": "Filter for alerts on dc-srv where rule.level >= 12. The ransomware detection rule is a custom WazuhBOTS rule in the 87900+ range.",
+          "cost": 75
+        },
+        {
+          "content": "The rule correlates multiple FIM events (rapid file modifications with extension changes) combined with Windows Volume Shadow Copy deletion events (vssadmin delete shadows).",
+          "cost": 75
+        },
+        {
+          "content": "Custom rule 87905 is titled 'Possible ransomware activity detected - Multiple file extensions changed and shadow copies deleted'. It has a level of 14 (high severity).",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S2-ALP-03",
+      "name": "[Alpha] Malicious Executable Hash",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Alpha",
+      "description": "What is the SHA256 hash of the malicious executable (ransomware binary) detected by Wazuh on dc-srv?\n\nExtract the file hash from Sysmon Event ID 1 (Process Create) or FIM alerts to identify the ransomware payload.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario2",
+        "hash",
+        "ioc",
+        "malware"
+      ],
+      "hints": [
+        {
+          "content": "Sysmon Event ID 1 (Process Create) includes file hashes in the Hashes field. Look for the process creation event of the ransomware executable on dc-srv.",
+          "cost": 75
+        },
+        {
+          "content": "Search for alerts where data.win.eventdata.hashes contains 'SHA256=' and correlate with the process name that triggered the ransomware detection rule (87905).",
+          "cost": 75
+        },
+        {
+          "content": "The ransomware binary was executed from a temp directory. Check Sysmon events where the Image path contains C:\\Windows\\Temp\\ or C:\\Users\\*\\AppData\\Local\\Temp\\. The SHA256 is a 64-character hex string.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S2-ALP-04",
+      "name": "[Alpha] AMSI Bypass Event Count",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Alpha",
+      "description": "How many distinct AMSI bypass events were recorded in the PowerShell ScriptBlock logs during the Iron Gate attack?\n\nCount the number of PowerShell Event ID 4104 entries that contain AMSI bypass techniques used by the attacker before executing malicious tools.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "3",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario2",
+        "amsi-bypass",
+        "powershell",
+        "count"
+      ],
+      "hints": [
+        {
+          "content": "Search for PowerShell Event ID 4104 alerts that contain references to AMSI-related strings such as 'AmsiScanBuffer', 'AmsiUtils', or 'amsi.dll'. Count the unique bypass events.",
+          "cost": 75
+        },
+        {
+          "content": "The attacker executed multiple AMSI bypass attempts throughout the attack. Look for ScriptBlock text containing 'Amsi' in obfuscated or plain form across all 4104 events.",
+          "cost": 75
+        },
+        {
+          "content": "There were exactly 3 AMSI bypass events. The attacker used the bypass before each major PowerShell-based attack phase: initial payload, credential dumping, and lateral movement.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S2-ALP-05",
+      "name": "[Alpha] Mimikatz Module Sequence",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Alpha",
+      "description": "What is the exact sequence of Mimikatz modules executed by the attacker for credential extraction?\n\nAnalyze the PowerShell ScriptBlock logs or process command-line arguments to reconstruct the ordered list of Mimikatz commands used. Provide them in execution order, separated by pipe characters.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "sekurlsa::logonpasswords|sekurlsa::wdigest|lsadump::sam",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario2",
+        "mimikatz",
+        "credential-dumping",
+        "sequence"
+      ],
+      "hints": [
+        {
+          "content": "Mimikatz modules follow the format 'module::command'. Look for PowerShell Event ID 4104 or Sysmon Event ID 1 command-line arguments containing 'sekurlsa', 'lsadump', or 'kerberos' module references.",
+          "cost": 75
+        },
+        {
+          "content": "The attacker ran three Mimikatz modules. Two are from the 'sekurlsa' module (for extracting logon passwords and WDigest credentials), and one is from the 'lsadump' module (for dumping the SAM database).",
+          "cost": 75
+        },
+        {
+          "content": "The sequence is: sekurlsa::logonpasswords (extract all logon credentials), sekurlsa::wdigest (extract WDigest plaintext passwords), lsadump::sam (dump the local SAM database). Separate them with pipe characters.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S2-ALP-06",
+      "name": "[Alpha] Shadow Copy Deletion Command",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Alpha",
+      "description": "What is the exact command used by the ransomware to delete Volume Shadow Copies before encrypting files?\n\nAnalyze process creation events (Sysmon Event ID 1 or Windows Event ID 4688) to find the shadow copy deletion command executed during the ransomware deployment.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "vssadmin delete shadows /all /quiet",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario2",
+        "ransomware",
+        "vssadmin",
+        "shadow-copies"
+      ],
+      "hints": [
+        {
+          "content": "Ransomware commonly deletes Volume Shadow Copies to prevent file recovery. Look for process creation events where the CommandLine contains 'vssadmin' or 'wmic shadowcopy'.",
+          "cost": 75
+        },
+        {
+          "content": "The command uses vssadmin.exe with arguments to delete all shadow copies silently. The /quiet flag suppresses confirmation prompts.",
+          "cost": 75
+        },
+        {
+          "content": "The full command is 'vssadmin delete shadows /all /quiet'. The /all flag targets all shadow copies, and /quiet prevents any user interaction.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S2-ALP-07",
+      "name": "[Alpha] Lateral Movement User Account",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Alpha",
+      "description": "What user account was used by the attacker to perform lateral movement across the network after the initial credential theft?\n\nAnalyze Windows logon events (Event ID 4624, 4648) during the lateral movement phase to identify the account used to authenticate to remote hosts.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "da_backup",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario2",
+        "lateral-movement",
+        "user-account",
+        "credential-abuse"
+      ],
+      "hints": [
+        {
+          "content": "After dumping credentials with Mimikatz, the attacker used a different account for lateral movement. Look at Event ID 4648 (Logon with explicit credentials) and Event ID 4624 with LogonType 3 (Network) on remote hosts.",
+          "cost": 75
+        },
+        {
+          "content": "The account used for lateral movement has elevated privileges (Domain Admin). It follows a naming convention suggesting it is a backup or service account with administrative access.",
+          "cost": 75
+        },
+        {
+          "content": "The account name starts with 'da_' (indicating Domain Admin) followed by a purpose descriptor. It is a privileged backup account: da_backup.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S2-ALP-08",
+      "name": "[Alpha] Ransomware MITRE Techniques",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Alpha",
+      "description": "What are the MITRE ATT&CK technique IDs associated with the ransomware encryption and recovery inhibition activities?\n\nIdentify the two primary MITRE technique IDs that cover data encryption for impact and inhibiting system recovery. Provide them separated by a pipe character, in numerical order.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "T1486|T1490",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario2",
+        "ransomware",
+        "mitre-attack",
+        "threat-intel"
+      ],
+      "hints": [
+        {
+          "content": "The ransomware performed two primary impact activities: encrypting files and deleting shadow copies. Each maps to a specific MITRE ATT&CK Impact technique.",
+          "cost": 75
+        },
+        {
+          "content": "Check the MITRE ATT&CK Impact tactic (TA0040). The techniques are related to 'Data Encrypted for Impact' and 'Inhibit System Recovery'. Both technique IDs are in the T14xx range.",
+          "cost": 75
+        },
+        {
+          "content": "T1486 is 'Data Encrypted for Impact' (file encryption) and T1490 is 'Inhibit System Recovery' (shadow copy deletion). Provide them separated by a pipe character.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S2-ALP-09",
+      "name": "[Alpha] Scheduled Task Persistence",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Alpha",
+      "description": "What is the full path of the scheduled task created by the attacker for persistence on dc-srv?\n\nExamine Windows Event ID 4698 (Scheduled Task Created) to identify the malicious scheduled task registered by the attacker. Provide the task path as shown in the TaskName field.",
+      "value": 300,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "\\WazuhBOTS\\UpdateCheck",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "alpha",
+        "scenario2",
+        "persistence",
+        "scheduled-task",
+        "ioc"
+      ],
+      "hints": [
+        {
+          "content": "Windows Event ID 4698 records when a new scheduled task is created. Look for tasks created during the attack timeframe that have suspicious actions or are located in non-standard paths.",
+          "cost": 75
+        },
+        {
+          "content": "The attacker created the scheduled task under a custom folder to mimic a legitimate update mechanism. The task folder uses the project name, and the task name suggests a checking/update function.",
+          "cost": 75
+        },
+        {
+          "content": "The task is located under \\WazuhBOTS\\ folder in Task Scheduler. The task name is 'UpdateCheck', making the full path \\WazuhBOTS\\UpdateCheck.",
+          "cost": 75
+        }
+      ]
+    },
+    {
+      "id": "S2-FNR-01",
+      "name": "[Fenrir] AMSI Bypass String",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Fenrir",
+      "description": "The attacker used a technique to bypass the Antimalware Scan Interface (AMSI) before executing Mimikatz. What specific string was obfuscated in the PowerShell log to achieve the AMSI bypass?\n\nAnalyze the PowerShell ScriptBlock logging events (Event ID 4104) to identify the AMSI bypass technique and the original obfuscated string.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "AmsiScanBuffer",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario2",
+        "amsi-bypass",
+        "evasion",
+        "powershell"
+      ],
+      "hints": [
+        {
+          "content": "AMSI bypass techniques typically patch or disable the AmsiScanBuffer function in amsi.dll. Look for PowerShell Event ID 4104 (ScriptBlock Logging) alerts that contain obfuscated references to AMSI-related strings.",
+          "cost": 100
+        },
+        {
+          "content": "The attacker used string concatenation or base64 encoding to obfuscate the function name they were targeting. Common patterns include: [Ref].Assembly.GetType('...Am'+'si'+'Utils') or base64-decoded calls to patch AmsiScanBuffer.",
+          "cost": 100
+        },
+        {
+          "content": "The obfuscated string resolves to 'AmsiScanBuffer', which is the Windows API function responsible for scanning PowerShell script content. Patching this function with a null return allows malicious scripts to execute undetected.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S2-FNR-02",
+      "name": "[Fenrir] Kerberoasting Correlation Rule",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Fenrir",
+      "description": "Design a Wazuh correlation rule that detects Kerberoasting activity: Event ID 4769 with RC4 encryption (0x17) targeting a service account. What is the rule ID of the custom WazuhBOTS rule that implements this detection?\n\nThis rule should correlate the Kerberos TGS request with the specific encryption downgrade indicator and the targeted service account type.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "87910",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario2",
+        "kerberoasting",
+        "correlation-rule",
+        "detection-engineering"
+      ],
+      "hints": [
+        {
+          "content": "The custom rule must match on: Windows Event ID 4769, ticket encryption type 0x17 (RC4-HMAC), and a service name that is not krbtgt or a machine account (ending in $).",
+          "cost": 100
+        },
+        {
+          "content": "In Wazuh XML rule format, the rule should use <if_sid> to chain off the base Windows Kerberos rule, and use <field name=\"win.eventdata.ticketEncryptionType\">0x17</field> with <field name=\"win.eventdata.serviceName\"> NOT matching machine accounts.",
+          "cost": 100
+        },
+        {
+          "content": "Custom rule 87910 is titled 'Possible Kerberoasting - TGS request with RC4 encryption for service account'. It has level 12 and is tagged with MITRE T1558.003.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S2-FNR-03",
+      "name": "[Fenrir] Phishing Document Filename",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Fenrir",
+      "description": "What is the exact filename of the malicious document delivered via the spearphishing email that initiated the Iron Gate attack?\n\nTrace the attack chain back to its origin by examining the earliest Sysmon events for Office application process creation and the document that triggered the macro execution.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "Q1_Report.docm",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario2",
+        "phishing",
+        "initial-access",
+        "malicious-document"
+      ],
+      "hints": [
+        {
+          "content": "Look for Sysmon Event ID 1 where the ParentImage is WINWORD.EXE. The CommandLine or process tree may reference the document name. Also check for Sysmon Event ID 15 (FileCreateStreamHash) for Office temp files.",
+          "cost": 100
+        },
+        {
+          "content": "The document uses a macro-enabled format (.docm) and its name is crafted to appear as a legitimate business document to entice the finance department employee to open it.",
+          "cost": 100
+        },
+        {
+          "content": "The filename follows a quarterly report naming convention: Q1_Report.docm. The .docm extension indicates it contains VBA macros.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S2-FNR-04",
+      "name": "[Fenrir] Complete Lateral Movement IP Sequence",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Fenrir",
+      "description": "Reconstruct the complete sequence of IP addresses the attacker moved to during the lateral movement phase, in chronological order.\n\nAnalyze all network connection events, remote logon events, and service installation events to map the full lateral movement path. Provide all IPs separated by pipe characters in the order they were first accessed.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "172.26.0.30|172.26.0.31|172.26.0.33|172.26.0.34|172.26.0.35|172.26.0.36",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario2",
+        "lateral-movement",
+        "ip-sequence",
+        "network-forensics"
+      ],
+      "hints": [
+        {
+          "content": "Combine Sysmon Event ID 3 (Network Connection), Windows Event ID 4648 (Explicit Credential Logon), and Event ID 7045 (Service Installation) events. Sort all remote connection events chronologically and extract unique destination IPs in order.",
+          "cost": 100
+        },
+        {
+          "content": "The attacker moved through 6 hosts on the 172.26.0.0/24 network. The first two targets are the web server (172.26.0.30) and Linux server (172.26.0.31). The remaining hosts are other workstations.",
+          "cost": 100
+        },
+        {
+          "content": "The full sequence is: 172.26.0.30 (web-srv), 172.26.0.31 (lnx-srv), 172.26.0.33, 172.26.0.34, 172.26.0.35, 172.26.0.36. Separate with pipe characters.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S2-FNR-05",
+      "name": "[Fenrir] Encrypted Directory List",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Fenrir",
+      "description": "What are all the directories that were targeted by the ransomware for file encryption on dc-srv?\n\nAnalyze FIM events and Sysmon file creation/modification events to identify every directory where files were encrypted (extension changed to .locked). Provide the full paths separated by pipe characters in alphabetical order.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "C:\\Shares\\Finance|C:\\Shares\\HR|C:\\Shares\\IT|C:\\Users\\Public\\Documents",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario2",
+        "ransomware",
+        "file-encryption",
+        "forensics"
+      ],
+      "hints": [
+        {
+          "content": "Look at FIM (syscheck) events and Sysmon Event ID 11 (File Create) where the filename ends with .locked. Extract the unique parent directories from all encrypted file paths.",
+          "cost": 100
+        },
+        {
+          "content": "The ransomware targeted both network shares (C:\\Shares\\) and user-accessible directories. Three of the four directories are under C:\\Shares\\ organized by department, and one is under C:\\Users\\.",
+          "cost": 100
+        },
+        {
+          "content": "The directories are: C:\\Shares\\Finance, C:\\Shares\\HR, C:\\Shares\\IT, and C:\\Users\\Public\\Documents. List them in alphabetical order separated by pipe characters.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S2-FNR-06",
+      "name": "[Fenrir] Full Attack Timeline",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Fenrir",
+      "description": "Determine the precise timestamps for the start and end of the Iron Gate attack. When was the first malicious activity detected, and when was the last ransomware-related event recorded?\n\nProvide the two ISO 8601 timestamps separated by a pipe character: first_event|last_event.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "2026-03-02T09:12:00Z|2026-03-02T15:12:05Z",
+          "case_sensitive": true
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario2",
+        "timeline",
+        "forensics",
+        "incident-response"
+      ],
+      "hints": [
+        {
+          "content": "Sort all Scenario 2 alerts by timestamp. The first malicious event is the macro execution from the phishing document. The last event is the final ransomware encryption or ransom note creation.",
+          "cost": 100
+        },
+        {
+          "content": "The attack started in the morning (around 09:00 UTC) with the phishing document being opened and ended in the afternoon (around 15:00 UTC) when the ransomware finished its operations. The timestamps are precise to the second.",
+          "cost": 100
+        },
+        {
+          "content": "The first malicious event was at 2026-03-02T09:12:00Z (macro execution) and the last event was at 2026-03-02T15:12:05Z (final ransomware activity). Format: start|end in ISO 8601.",
+          "cost": 100
+        }
+      ]
+    },
+    {
+      "id": "S2-FNR-07",
+      "name": "[Fenrir] Complete Windows Event ID Chain",
+      "category": "Scenario 2: Iron Gate",
+      "level": "Fenrir",
+      "description": "List ALL unique Windows Event IDs observed across the entire Iron Gate attack scenario, in numerical order.\n\nThis requires a comprehensive analysis of every event type generated during the attack, from initial phishing through ransomware deployment. Provide all Event IDs separated by pipe characters in ascending numerical order.",
+      "value": 500,
+      "type": "standard",
+      "state": "visible",
+      "flags": [
+        {
+          "type": "static",
+          "content": "1|10|4104|4624|4634|4648|4672|4688|4698|4769|5145|5156|7045",
+          "case_sensitive": false
+        }
+      ],
+      "tags": [
+        "fenrir",
+        "scenario2",
+        "event-ids",
+        "comprehensive-analysis",
+        "forensics"
+      ],
+      "hints": [
+        {
+          "content": "Query all Scenario 2 alerts and aggregate unique values of data.win.system.eventID. The events span Sysmon (1-29), Windows Security (4xxx-5xxx), and System (7xxx) event log channels.",
+          "cost": 100
+        },
+        {
+          "content": "The attack generated 13 unique Event IDs. They include: Sysmon process events (1, 10), PowerShell logging (4104), authentication events (4624, 4634, 4648, 4672), process tracking (4688), scheduled tasks (4698), Kerberos (4769), file share (5145), firewall (5156), and service installation (7045).",
+          "cost": 100
+        },
+        {
+          "content": "The complete list in order is: 1, 10, 4104, 4624, 4634, 4648, 4672, 4688, 4698, 4769, 5145, 5156, 7045. Separate each with a pipe character.",
+          "cost": 100
+        }
+      ]
+    }
+  ]
+}

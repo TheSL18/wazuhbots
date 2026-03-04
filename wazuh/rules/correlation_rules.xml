@@ -1,0 +1,383 @@
+<!--
+  WazuhBOTS - Correlation Rules
+  ==============================
+  Multi-step attack detection combining events across time windows.
+
+  Rule ID range: 88000-88099
+
+  Correlation scenarios:
+    88000-88009  SQLi -> File Upload -> Command Execution
+    88010-88019  Brute Force -> Successful Login
+    88020-88029  Credential Dump -> Lateral Movement
+    88030-88039  Data Staging -> Exfiltration
+    88040-88049  Reconnaissance -> Exploitation chain
+-->
+<group name="wazuhbots,correlation,">
+
+  <!-- ============================================================ -->
+  <!--  MULTI-STEP WEB ATTACK: SQLi -> Upload -> RCE (88000-88009) -->
+  <!--  MITRE ATT&CK: T1190, T1505.003, T1059                     -->
+  <!--                                                              -->
+  <!--  Attack flow:                                                -->
+  <!--    1. SQL injection detected (87900-87905)                   -->
+  <!--    2. File upload / web shell drop in web dir (87920-87923)  -->
+  <!--    3. Command execution from web server process (87930-87933)-->
+  <!--  All from the same source within 5 minutes.                  -->
+  <!-- ============================================================ -->
+
+  <!-- Phase 1 -> Phase 2: SQLi followed by file creation in web dir -->
+  <rule id="88000" level="13" timeframe="300">
+    <if_matched_sid>87900</if_matched_sid>
+    <if_sid>87920</if_sid>
+    <same_source_ip />
+    <description>CORRELATION: SQL Injection followed by file creation in web directory from same source (Phase 1->2 of web attack chain).</description>
+    <mitre>
+      <id>T1190</id>
+      <id>T1505.003</id>
+    </mitre>
+    <group>correlation,multi_step_attack,web_attack_chain,pci_dss_6.5.1,pci_dss_11.5,</group>
+  </rule>
+
+  <!-- Phase 2 -> Phase 3: Web shell drop followed by command execution -->
+  <rule id="88001" level="14" timeframe="300">
+    <if_matched_sid>87920</if_matched_sid>
+    <if_sid>87933</if_sid>
+    <description>CORRELATION: Web shell deployment followed by suspicious process execution from web server user (Phase 2->3 of web attack chain).</description>
+    <mitre>
+      <id>T1505.003</id>
+      <id>T1059</id>
+    </mitre>
+    <group>correlation,multi_step_attack,web_attack_chain,</group>
+  </rule>
+
+  <!-- Full chain: SQLi led to confirmed command execution via web process -->
+  <rule id="88002" level="15" timeframe="300">
+    <if_matched_sid>88000</if_matched_sid>
+    <if_sid>87933</if_sid>
+    <description>CORRELATION CRITICAL: Full web attack chain confirmed - SQLi to web shell to command execution within 5 minutes. Active compromise in progress.</description>
+    <mitre>
+      <id>T1190</id>
+      <id>T1505.003</id>
+      <id>T1059</id>
+    </mitre>
+    <group>correlation,multi_step_attack,web_attack_chain,active_compromise,pci_dss_6.5.1,pci_dss_11.4,</group>
+  </rule>
+
+  <!-- SQLi followed directly by reverse shell -->
+  <rule id="88003" level="15" timeframe="300">
+    <if_matched_sid>87900</if_matched_sid>
+    <if_sid>87930</if_sid>
+    <description>CORRELATION CRITICAL: SQL Injection followed by reverse shell execution - direct exploitation to shell access.</description>
+    <mitre>
+      <id>T1190</id>
+      <id>T1059</id>
+    </mitre>
+    <group>correlation,multi_step_attack,web_attack_chain,active_compromise,</group>
+  </rule>
+
+  <!-- SQLi followed by suspicious download -->
+  <rule id="88004" level="13" timeframe="300">
+    <if_matched_sid>87900</if_matched_sid>
+    <if_sid>87931</if_sid>
+    <description>CORRELATION: SQL Injection followed by suspicious file download (wget/curl) - potential payload staging.</description>
+    <mitre>
+      <id>T1190</id>
+      <id>T1105</id>
+    </mitre>
+    <group>correlation,multi_step_attack,web_attack_chain,</group>
+  </rule>
+
+  <!-- ============================================================ -->
+  <!--  BRUTE FORCE -> SUCCESSFUL LOGIN (88010-88019)               -->
+  <!--  MITRE ATT&CK: T1110, T1078                                 -->
+  <!--                                                              -->
+  <!--  Attack flow:                                                -->
+  <!--    1. Multiple failed logins (brute force pattern)           -->
+  <!--    2. Successful login from same source                      -->
+  <!--    3. Post-authentication suspicious activity                -->
+  <!-- ============================================================ -->
+
+  <!-- Brute force followed by successful login (any protocol) -->
+  <rule id="88010" level="13" timeframe="600">
+    <if_matched_sid>87910</if_matched_sid>
+    <if_sid>5715</if_sid>
+    <same_source_ip />
+    <description>CORRELATION: SSH brute force followed by successful login from same IP - credentials likely compromised.</description>
+    <mitre>
+      <id>T1110</id>
+      <id>T1078</id>
+    </mitre>
+    <group>correlation,brute_force_success,authentication,pci_dss_10.2.4,</group>
+  </rule>
+
+  <!-- Successful brute force followed by privilege escalation -->
+  <rule id="88011" level="15" timeframe="600">
+    <if_matched_sid>88010</if_matched_sid>
+    <if_sid>87941</if_sid>
+    <description>CORRELATION CRITICAL: Brute force login success followed by privilege escalation attempt - full compromise chain in progress.</description>
+    <mitre>
+      <id>T1110</id>
+      <id>T1078</id>
+      <id>T1548.003</id>
+    </mitre>
+    <group>correlation,brute_force_success,privilege_escalation,active_compromise,</group>
+  </rule>
+
+  <!-- Successful brute force followed by data access -->
+  <rule id="88012" level="14" timeframe="600">
+    <if_matched_sid>88010</if_matched_sid>
+    <if_sid>87934</if_sid>
+    <description>CORRELATION: Brute force success followed by persistence mechanism (cron modification) - attacker establishing foothold.</description>
+    <mitre>
+      <id>T1110</id>
+      <id>T1078</id>
+      <id>T1053.003</id>
+    </mitre>
+    <group>correlation,brute_force_success,persistence,</group>
+  </rule>
+
+  <!-- Brute force success followed by log clearing -->
+  <rule id="88013" level="15" timeframe="600">
+    <if_matched_sid>88010</if_matched_sid>
+    <if_sid>87962</if_sid>
+    <description>CORRELATION CRITICAL: Brute force success followed by history/log clearing - attacker covering tracks.</description>
+    <mitre>
+      <id>T1110</id>
+      <id>T1078</id>
+      <id>T1070.003</id>
+    </mitre>
+    <group>correlation,brute_force_success,anti_forensics,active_compromise,</group>
+  </rule>
+
+  <!-- Windows: failed logons followed by success (Event ID 4625 -> 4624) -->
+  <rule id="88014" level="13" frequency="5" timeframe="300">
+    <if_group>windows_event</if_group>
+    <field name="EventID">4625</field>
+    <same_source_ip />
+    <description>CORRELATION: Multiple Windows logon failures from same source - brute force in progress.</description>
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+    <group>correlation,brute_force,windows,authentication,</group>
+  </rule>
+
+  <!-- ============================================================ -->
+  <!--  CREDENTIAL DUMP -> LATERAL MOVEMENT (88020-88029)           -->
+  <!--  MITRE ATT&CK: T1003 (Credential Dumping),                  -->
+  <!--                 T1021 (Remote Services)                      -->
+  <!--                                                              -->
+  <!--  Attack flow:                                                -->
+  <!--    1. Credential access indicators (mimikatz, hashdump, etc) -->
+  <!--    2. Authentication from compromised host to other hosts    -->
+  <!--    3. Execution of commands on remote systems                -->
+  <!-- ============================================================ -->
+
+  <!-- Credential dumping tool indicators -->
+  <rule id="88020" level="14">
+    <if_group>syslog|audit|syscheck</if_group>
+    <match type="pcre2">(?i)(mimikatz|sekurlsa|lsadump|hashdump|gsecdump|wce\.exe|procdump.*lsass|comsvcs.*MiniDump|ntdsutil.*ifm|vssadmin.*shadow|secretsdump|impacket|pypykatz|LaZagne)</match>
+    <description>Credential Dumping: Known credential theft tool or technique detected.</description>
+    <mitre>
+      <id>T1003</id>
+    </mitre>
+    <group>correlation,credential_dump,pci_dss_10.2.7,</group>
+  </rule>
+
+  <!-- /etc/shadow or SAM access -->
+  <rule id="88021" level="13">
+    <if_group>audit|syscheck</if_group>
+    <match type="pcre2">(?i)(\/etc\/shadow|SAM|SYSTEM|SECURITY|NTDS\.dit|\.ntds)</match>
+    <field name="audit.syscall" type="pcre2">(open|openat|read)</field>
+    <description>Credential Access: Sensitive credential store file accessed.</description>
+    <mitre>
+      <id>T1003.002</id>
+      <id>T1003.003</id>
+    </mitre>
+    <group>correlation,credential_dump,</group>
+  </rule>
+
+  <!-- Credential dump followed by SSH to new host -->
+  <rule id="88022" level="15" timeframe="600">
+    <if_matched_sid>88020</if_matched_sid>
+    <if_sid>87913</if_sid>
+    <description>CORRELATION CRITICAL: Credential dump followed by SSH login to new host - lateral movement in progress.</description>
+    <mitre>
+      <id>T1003</id>
+      <id>T1021.004</id>
+    </mitre>
+    <group>correlation,credential_dump,lateral_movement,active_compromise,</group>
+  </rule>
+
+  <!-- Credential dump followed by remote command execution indicators -->
+  <rule id="88023" level="15" timeframe="600">
+    <if_matched_sid>88020</if_matched_sid>
+    <if_sid>87930</if_sid>
+    <description>CORRELATION CRITICAL: Credential dump followed by remote shell activity - lateral movement with remote execution.</description>
+    <mitre>
+      <id>T1003</id>
+      <id>T1021</id>
+      <id>T1059</id>
+    </mitre>
+    <group>correlation,credential_dump,lateral_movement,active_compromise,</group>
+  </rule>
+
+  <!-- Pass-the-hash or pass-the-ticket indicators -->
+  <rule id="88024" level="13">
+    <if_group>syslog|audit|windows_event</if_group>
+    <match type="pcre2">(?i)(pth|pass.the.hash|overpass.the.hash|pass.the.ticket|golden.ticket|silver.ticket|kerberoast|asreproast|impacket.*exec|psexec|wmiexec|smbexec|atexec|dcomexec)</match>
+    <description>Lateral Movement: Pass-the-hash, pass-the-ticket, or remote execution tool indicators detected.</description>
+    <mitre>
+      <id>T1550.002</id>
+      <id>T1021.002</id>
+    </mitre>
+    <group>correlation,lateral_movement,credential_abuse,</group>
+  </rule>
+
+  <!-- ============================================================ -->
+  <!--  DATA STAGING -> EXFILTRATION (88030-88039)                  -->
+  <!--  MITRE ATT&CK: T1074 (Data Staged), T1041 (Exfil over C2)  -->
+  <!--                                                              -->
+  <!--  Attack flow:                                                -->
+  <!--    1. Data collection / staging (archiving, copying)         -->
+  <!--    2. Data compression or encoding                           -->
+  <!--    3. Exfiltration via network (C2, DNS, HTTP, etc.)         -->
+  <!-- ============================================================ -->
+
+  <!-- Data staging: archiving or compressing sensitive directories -->
+  <rule id="88030" level="10">
+    <if_group>syslog|audit</if_group>
+    <match type="pcre2">(?i)((tar|zip|7z|rar|gzip)\s+.*(\/etc\/|\/home\/|\/root\/|\/var\/lib\/|\/opt\/|database|backup|confidential|secret|\.sql|\.csv|\.xlsx))</match>
+    <description>Data Staging: Archive or compression of potentially sensitive directories or files detected.</description>
+    <mitre>
+      <id>T1074.001</id>
+      <id>T1560.001</id>
+    </mitre>
+    <group>correlation,data_staging,exfiltration_prep,</group>
+  </rule>
+
+  <!-- Data staging: large file copy to /tmp or external media -->
+  <rule id="88031" level="10">
+    <if_group>syslog|audit</if_group>
+    <match type="pcre2">(?i)(cp\s+.*\/(tmp|dev\/shm|media|mnt)\/|rsync\s+.*\/(tmp|dev\/shm)|dd\s+if=.*of=\/(tmp|dev))</match>
+    <description>Data Staging: File copy to temporary or external storage location detected.</description>
+    <mitre>
+      <id>T1074.001</id>
+    </mitre>
+    <group>correlation,data_staging,exfiltration_prep,</group>
+  </rule>
+
+  <!-- Data encoding for exfiltration -->
+  <rule id="88032" level="10">
+    <if_group>syslog|audit</if_group>
+    <match type="pcre2">(?i)(base64\s+.*\.(tar|zip|sql|csv|gz)|openssl\s+(enc|aes)|gpg\s+(-c|-e).*\.(tar|zip|sql|csv)|xxd\s+.*>)</match>
+    <description>Data Staging: File encoding or encryption of archive - potential exfiltration preparation.</description>
+    <mitre>
+      <id>T1132.001</id>
+      <id>T1560.001</id>
+    </mitre>
+    <group>correlation,data_staging,data_encoding,exfiltration_prep,</group>
+  </rule>
+
+  <!-- Data staging followed by outbound transfer -->
+  <rule id="88033" level="14" timeframe="600">
+    <if_matched_sid>88030</if_matched_sid>
+    <if_sid>87954</if_sid>
+    <description>CORRELATION: Data staging (archive creation) followed by outbound connection to suspicious port - exfiltration likely.</description>
+    <mitre>
+      <id>T1074.001</id>
+      <id>T1041</id>
+    </mitre>
+    <group>correlation,data_staging,exfiltration,active_compromise,</group>
+  </rule>
+
+  <!-- Data staging followed by DNS tunneling indicators -->
+  <rule id="88034" level="14" timeframe="600">
+    <if_matched_sid>88030</if_matched_sid>
+    <if_sid>87950</if_sid>
+    <description>CORRELATION: Data staging followed by DNS tunneling indicators - exfiltration via DNS likely.</description>
+    <mitre>
+      <id>T1074.001</id>
+      <id>T1048.001</id>
+    </mitre>
+    <group>correlation,data_staging,exfiltration,dns_exfil,active_compromise,</group>
+  </rule>
+
+  <!-- Exfiltration via curl/wget POST -->
+  <rule id="88035" level="12">
+    <if_group>syslog|audit</if_group>
+    <match type="pcre2">(?i)((curl|wget)\s+.*(-X\s+POST|--data|--upload-file|-T\s+).*\.(tar|zip|gz|sql|csv|enc|gpg|b64))</match>
+    <description>Data Exfiltration: Upload of archive or encoded file via HTTP detected.</description>
+    <mitre>
+      <id>T1048.002</id>
+    </mitre>
+    <group>correlation,exfiltration,http_exfil,</group>
+  </rule>
+
+  <!-- Data staging followed by HTTP exfiltration -->
+  <rule id="88036" level="15" timeframe="600">
+    <if_matched_sid>88030</if_matched_sid>
+    <if_sid>88035</if_sid>
+    <description>CORRELATION CRITICAL: Data archive created then uploaded via HTTP - confirmed data exfiltration.</description>
+    <mitre>
+      <id>T1074.001</id>
+      <id>T1048.002</id>
+    </mitre>
+    <group>correlation,data_staging,exfiltration,active_compromise,</group>
+  </rule>
+
+  <!-- SCP/SFTP transfer of staged data -->
+  <rule id="88037" level="12">
+    <if_group>syslog|audit</if_group>
+    <match type="pcre2">(?i)(scp\s+.*\.(tar|zip|gz|sql|csv|enc|b64)\s+\S+@|sftp\s+.*put\s+.*\.(tar|zip|gz|sql))</match>
+    <description>Data Exfiltration: SCP or SFTP transfer of archive or encoded file detected.</description>
+    <mitre>
+      <id>T1048.002</id>
+    </mitre>
+    <group>correlation,exfiltration,ssh_exfil,</group>
+  </rule>
+
+  <!-- ============================================================ -->
+  <!--  RECONNAISSANCE -> EXPLOITATION (88040-88049)                -->
+  <!--  MITRE ATT&CK: T1595 (Active Scanning), T1190              -->
+  <!--                                                              -->
+  <!--  Correlates early recon activity with later exploitation.    -->
+  <!-- ============================================================ -->
+
+  <!-- Port scan followed by exploitation attempt -->
+  <rule id="88040" level="12" timeframe="600" frequency="15">
+    <if_group>firewall|ids</if_group>
+    <same_source_ip />
+    <description>CORRELATION: Port scanning activity followed by connection attempts to multiple services from same source.</description>
+    <mitre>
+      <id>T1595.001</id>
+    </mitre>
+    <group>correlation,reconnaissance,port_scan,</group>
+  </rule>
+
+  <!-- Web scanning followed by SQLi -->
+  <rule id="88041" level="13" timeframe="600">
+    <if_matched_sid>31101</if_matched_sid>
+    <if_sid>87900</if_sid>
+    <same_source_ip />
+    <description>CORRELATION: Web scanning (multiple 404s) followed by SQL injection attempts from same source - targeted attack.</description>
+    <mitre>
+      <id>T1595.002</id>
+      <id>T1190</id>
+    </mitre>
+    <group>correlation,reconnaissance,web_attack_chain,</group>
+  </rule>
+
+  <!-- Full kill chain: recon -> exploit -> persist -> exfil -->
+  <rule id="88042" level="15" timeframe="1800">
+    <if_matched_sid>88002</if_matched_sid>
+    <if_sid>87934</if_sid>
+    <description>CORRELATION CRITICAL: Full kill chain detected - exploitation, command execution, and persistence within 30 minutes. Incident response required immediately.</description>
+    <mitre>
+      <id>T1190</id>
+      <id>T1059</id>
+      <id>T1053.003</id>
+    </mitre>
+    <group>correlation,kill_chain,active_compromise,incident_response,</group>
+  </rule>
+
+</group>
