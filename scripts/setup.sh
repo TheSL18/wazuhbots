@@ -101,7 +101,7 @@ banner() {
 BANNER
   echo -e "${NC}"
   echo -e "${BOLD}  Boss of the SOC — Powered by Wazuh${NC}"
-  echo -e "  Created by MrHacker (Kevin Munoz) | Wazuh Technology Ambassador"
+  echo -e "  Created by MrHacker (Kevin Munoz) | Wazuh Ambassador"
   echo -e "  ${CYAN}https://github.com/TheSL18/wazuhbots${NC}"
   echo ""
 }
