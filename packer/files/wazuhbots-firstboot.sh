@@ -128,9 +128,16 @@ log_ok "Environment file generated with unique passwords."
 log_step "Step 3/8 — Generating SSL certificates..."
 
 rm -rf "${CERTS_DIR:?}"/*.pem "${CERTS_DIR:?}"/*.key 2>/dev/null || true
+mkdir -p "${CERTS_DIR}"
 
 cd "${PROJECT_DIR}"
 ${COMPOSE_CMD} -f "${CERTS_COMPOSE}" run --rm generator
+
+# Fix permissions — the generator container sets restrictive ownership
+# (container UIDs) and mode 0400, preventing the host from accessing files.
+chmod 750 "${CERTS_DIR}" 2>/dev/null || true
+chmod 640 "${CERTS_DIR}"/*.pem "${CERTS_DIR}"/*.key 2>/dev/null || true
+chown -R "$(id -u):$(id -g)" "${CERTS_DIR}" 2>/dev/null || true
 
 # Verify certificates
 expected_certs=(

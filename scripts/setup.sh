@@ -391,8 +391,24 @@ generate_certs() {
     exit 1
   fi
 
+  # Ensure certs directory exists with correct ownership before generator runs
+  mkdir -p "${CERTS_DIR}"
+
   log_info "Running Wazuh certificate generator..."
   ${COMPOSE_CMD} -f "${CERTS_COMPOSE}" run --rm generator
+
+  # Fix permissions before verifying — the generator container sets restrictive
+  # ownership (container UIDs) and mode 0400, which prevents the host user from
+  # even stat()-ing the files.  We need at least directory traversal to verify.
+  if [[ "$(id -u)" -eq 0 ]]; then
+    chmod 750 "${CERTS_DIR}"
+    chmod 640 "${CERTS_DIR}"/*.pem "${CERTS_DIR}"/*.key 2>/dev/null || true
+  else
+    sudo chmod 750 "${CERTS_DIR}" 2>/dev/null || true
+    sudo chmod 640 "${CERTS_DIR}"/*.pem "${CERTS_DIR}"/*.key 2>/dev/null || true
+    sudo chown "$(id -u):$(id -g)" "${CERTS_DIR}" 2>/dev/null || true
+    sudo chown "$(id -u):$(id -g)" "${CERTS_DIR}"/* 2>/dev/null || true
+  fi
 
   # Verify expected certificate files were created
   local -a expected_certs=(
