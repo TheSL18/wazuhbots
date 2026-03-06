@@ -1,0 +1,53 @@
+# Environment
+.env
+*.env.local
+
+# Docker volumes
+docker/nginx/certs/*.pem
+docker/nginx/certs/*.key
+docker/nginx/certs/*.crt
+
+# Wazuh generated SSL certificates
+config/wazuh_indexer_ssl_certs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+*.tmp
+
+# Generated exports
+exports/
+snapshots/
+
+# Node modules (if any CTFd plugins)
+node_modules/
+
+# Packer (VM builds — not needed for Docker/Podman deployment)
+packer/
+
+# Large dataset files (use Git LFS or download separately)
+# Uncomment if datasets are too large for git:
+# datasets/**/*.json
+# !datasets/**/metadata.json
