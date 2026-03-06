@@ -322,7 +322,7 @@ generate_env() {
   _gen_pass() {
     local base special
     base="$(openssl rand -base64 24 | tr -d '/+=' | head -c 20)"
-    special='!@#.'
+    special='!._-'
     # Pick one random special char and append to guarantee policy compliance
     echo "${base}${special:$((RANDOM % ${#special})):1}"
   }
@@ -397,18 +397,18 @@ generate_certs() {
   log_info "Running Wazuh certificate generator..."
   ${COMPOSE_CMD} -f "${CERTS_COMPOSE}" run --rm generator
 
-  # Fix permissions before verifying — the generator container sets restrictive
-  # ownership (container UIDs) and mode 0400, which prevents the host user from
-  # even stat()-ing the files.  We need at least directory traversal to verify.
-  if [[ "$(id -u)" -eq 0 ]]; then
-    chmod 750 "${CERTS_DIR}"
-    chmod 640 "${CERTS_DIR}"/*.pem "${CERTS_DIR}"/*.key 2>/dev/null || true
-  else
-    sudo chmod 750 "${CERTS_DIR}" 2>/dev/null || true
-    sudo chmod 640 "${CERTS_DIR}"/*.pem "${CERTS_DIR}"/*.key 2>/dev/null || true
-    sudo chown "$(id -u):$(id -g)" "${CERTS_DIR}" 2>/dev/null || true
-    sudo chown "$(id -u):$(id -g)" "${CERTS_DIR}"/* 2>/dev/null || true
+  # Fix permissions — the generator container sets restrictive ownership
+  # (container UIDs like 100999) and mode 0400, which prevents the host user
+  # from even stat()-ing the files.  With Podman rootless, use `podman unshare`
+  # to reclaim ownership without sudo.  Certs must be 644 so that non-root
+  # users inside containers (e.g. wazuh-indexer) can read them.
+  if [[ "${CONTAINER_CMD}" == "podman" ]]; then
+    podman unshare chown -R 0:0 "${CERTS_DIR}"
+  elif [[ "$(id -u)" -ne 0 ]]; then
+    sudo chown -R "$(id -u):$(id -g)" "${CERTS_DIR}"
   fi
+  chmod 755 "${CERTS_DIR}"
+  chmod 644 "${CERTS_DIR}"/* 2>/dev/null || true
 
   # Verify expected certificate files were created
   local -a expected_certs=(
@@ -437,13 +437,6 @@ generate_certs() {
     exit 1
   fi
 
-  # Fix permissions — certs must be readable by the containers
-  chmod 750 "${CERTS_DIR}"
-  chmod 640 "${CERTS_DIR}"/*.pem "${CERTS_DIR}"/*.key 2>/dev/null || true
-  # If running as root, fix ownership to the real user (for rootless podman)
-  if [[ "$(id -u)" -eq 0 ]] && [[ -n "${SUDO_USER:-}" ]]; then
-    chown -R "${SUDO_USER}:${SUDO_USER}" "${CERTS_DIR}"
-  fi
   log_ok "SSL certificates generated successfully ($(ls "${CERTS_DIR}"/*.pem | wc -l) files)"
 }
 
@@ -462,10 +455,64 @@ deploy_stack() {
     log_info "Skipping image build (--skip-build)"
   fi
 
-  log_info "Running: ${COMPOSE_CMD} up -d ${build_flag}"
-  ${COMPOSE_CMD} -f "${COMPOSE_FILE}" up -d ${build_flag}
+  # Build images first if needed
+  if [[ "${SKIP_BUILD}" == "false" ]]; then
+    log_info "Building custom images..."
+    ${COMPOSE_CMD} -f "${COMPOSE_FILE}" build 2>&1 || true
+  fi
 
-  log_ok "Docker stack started. Containers are booting..."
+  # --- Phase 1: Start indexer + independent services ---
+  # The indexer must be initialized with securityadmin before it becomes healthy.
+  # Services like dashboard depend on indexer being healthy, so we start them after.
+  log_info "Starting Wazuh Indexer (+ Wazuh Manager, CTFd stack)..."
+  ${COMPOSE_CMD} -f "${COMPOSE_FILE}" up -d --no-deps wazuh-indexer wazuh-manager ctfd-db ctfd-redis ctfd 2>&1 || true
+
+  # --- Phase 2: Initialize Wazuh Indexer security ---
+  # Wazuh 4.14.x requires securityadmin to initialize the .opendistro_security
+  # index on first boot. Without this, the indexer returns 503 and stays unhealthy.
+  local indexer_container="wazuhbots-indexer"
+  log_info "Waiting for indexer HTTPS to be reachable..."
+  local max_wait=120
+  local elapsed=0
+  while [[ "${elapsed}" -lt "${max_wait}" ]]; do
+    local state
+    state=$(${CONTAINER_CMD} inspect --format='{{.State.Status}}' "${indexer_container}" 2>/dev/null || echo "missing")
+    if [[ "${state}" == "running" ]]; then
+      local http_code
+      http_code=$(${CONTAINER_CMD} exec "${indexer_container}" \
+        curl -sk -o /dev/null -w "%{http_code}" https://localhost:9200 2>/dev/null || echo "000")
+      if [[ "${http_code}" != "000" ]]; then
+        break
+      fi
+    fi
+    sleep 5
+    elapsed=$((elapsed + 5))
+    printf "\r  Waiting for indexer... %3ds / %ds" "${elapsed}" "${max_wait}"
+  done
+  echo ""
+
+  if [[ "${elapsed}" -ge "${max_wait}" ]]; then
+    log_warn "Indexer not reachable after ${max_wait}s. Skipping security init."
+  else
+    log_info "Initializing indexer security configuration (securityadmin)..."
+    local sa_output
+    sa_output=$(${CONTAINER_CMD} exec -u root "${indexer_container}" bash -c \
+      "export JAVA_HOME=/usr/share/wazuh-indexer/jdk && /usr/share/wazuh-indexer/plugins/opensearch-security/tools/securityadmin.sh -cd /usr/share/wazuh-indexer/config/opensearch-security/ -cacert /usr/share/wazuh-indexer/config/certs/root-ca.pem -cert /usr/share/wazuh-indexer/config/certs/admin.pem -key /usr/share/wazuh-indexer/config/certs/admin-key.pem -h localhost -nhnv -icl" 2>&1)
+
+    if echo "${sa_output}" | grep -q "Done with success"; then
+      log_ok "Indexer security initialized successfully"
+    else
+      log_warn "securityadmin may have failed. Output:"
+      echo "${sa_output}" | tail -5
+    fi
+  fi
+
+  # --- Phase 3: Start remaining services ---
+  # Now that the indexer is healthy, start dashboard, nginx, and victim containers.
+  log_info "Starting remaining services (dashboard, nginx, victims)..."
+  ${COMPOSE_CMD} -f "${COMPOSE_FILE}" up -d 2>&1 || true
+
+  log_ok "Full stack started."
 }
 
 # ------------------------------------------------------------------------------
@@ -643,81 +690,41 @@ print(len(json.loads(p.read_text())) if p.exists() else 0)
 post_deploy() {
   log_step "Step 9/9 — Post-deployment tasks"
 
-  # Set indexer admin password via securityadmin
-  log_info "Configuring Wazuh Indexer admin password..."
+  # Wazuh Indexer credentials note:
+  # The wazuh/wazuh-indexer:4.14.3 image ignores OPENSEARCH_INITIAL_ADMIN_PASSWORD
+  # and the admin user is "reserved" (cannot be changed via REST API).
+  # Default credentials: admin / admin
+  # To change it, use securityadmin.sh with a full internal_users.yml backup.
   set -a
   # shellcheck disable=SC1090
   source "${ENV_FILE}"
   set +a
 
-  local indexer_container="wazuhbots-indexer"
-  local security_tools="/usr/share/wazuh-indexer/plugins/opensearch-security/tools"
-  local certs_path="/usr/share/wazuh-indexer/certs"
-
-  # Generate bcrypt hashes for admin and kibanaserver (dashboard) users
-  local admin_hash kibana_hash
-  admin_hash=$(${CONTAINER_CMD} exec -u root "${indexer_container}" bash -c \
-    "export JAVA_HOME=/usr/share/wazuh-indexer/jdk && ${security_tools}/hash.sh -p '${INDEXER_PASSWORD}'" 2>&1 \
-    | grep '^\$2y')
-  kibana_hash=$(${CONTAINER_CMD} exec -u root "${indexer_container}" bash -c \
-    "export JAVA_HOME=/usr/share/wazuh-indexer/jdk && ${security_tools}/hash.sh -p '${DASHBOARD_PASSWORD}'" 2>&1 \
-    | grep '^\$2y')
-
-  if [[ -z "${admin_hash}" ]] || [[ -z "${kibana_hash}" ]]; then
-    log_warn "Could not generate password hash(es). Indexer may use default credentials."
-    [[ -z "${admin_hash}" ]] && log_warn "  - admin hash failed"
-    [[ -z "${kibana_hash}" ]] && log_warn "  - kibanaserver hash failed"
-  else
-    log_info "Applying security configuration via securityadmin..."
-    local securityadmin_output
-    securityadmin_output=$(${CONTAINER_CMD} exec -u root "${indexer_container}" bash -c "
-            mkdir -p ${security_tools}/../securityconfig
-            cat > ${security_tools}/../securityconfig/internal_users.yml << IEOF
----
-_meta:
-  type: internalusers
-  config_version: 2
-admin:
-  hash: \"${admin_hash}\"
-  reserved: true
-  backend_roles:
-    - admin
-  description: Admin user
-kibanaserver:
-  hash: \"${kibana_hash}\"
-  reserved: true
-  description: Kibana server user
-IEOF
-            export JAVA_HOME=/usr/share/wazuh-indexer/jdk
-            ${security_tools}/securityadmin.sh \
-                -f ${security_tools}/../securityconfig/internal_users.yml \
-                -t internalusers -icl -nhnv \
-                -cacert ${certs_path}/root-ca.pem \
-                -cert ${certs_path}/admin.pem \
-                -key ${certs_path}/admin-key.pem \
-                -h localhost
-        " 2>&1) && log_ok "Indexer admin + kibanaserver passwords configured" \
-      || { log_warn "Failed to set indexer passwords. securityadmin output:"; echo "${securityadmin_output}"; }
-  fi
+  log_info "Wazuh Indexer default credentials: admin / admin"
+  log_info "Dashboard login: admin / admin"
 
   # Ingest datasets (attacks + baseline noise)
+  # Note: Wazuh indexer 4.14.3 uses default admin/admin credentials
   if [[ "${NO_INGEST}" == "false" ]]; then
     if [[ -f "${SCRIPT_DIR}/ingest_datasets.py" ]]; then
       log_info "Ingesting datasets into Wazuh Indexer (attacks + noise)..."
-      # Source .env so the python script picks up credentials
       set -a
       # shellcheck disable=SC1090
       source "${ENV_FILE}"
       set +a
+      # Override INDEXER_PASSWORD — Wazuh indexer 4.14.3 ignores
+      # OPENSEARCH_INITIAL_ADMIN_PASSWORD and uses default "admin"
+      export INDEXER_PASSWORD="admin"
       if python3 "${SCRIPT_DIR}/ingest_datasets.py" --all --reindex; then
         log_ok "Dataset ingestion complete."
 
-        # Show per-index document counts
+        # Show per-index document counts (query via container exec for Podman compat)
         log_info "Index document counts:"
         for day in 01 02 03 04 05 06 07; do
           local idx="wazuh-alerts-4.x-2026.03.${day}"
           local count
-          count=$(curl -sk -u "admin:${INDEXER_PASSWORD}" \
+          count=$(${CONTAINER_CMD} exec wazuhbots-indexer \
+            curl -sk -u "admin:admin" \
             "https://localhost:9200/${idx}/_count" 2>/dev/null \
             | python3 -c "import sys,json; print(json.load(sys.stdin).get('count','N/A'))" 2>/dev/null \
             || echo "N/A")
@@ -726,7 +733,7 @@ IEOF
           fi
         done
       else
-        log_warn "Dataset ingestion had errors. Re-run: INDEXER_PASSWORD=... python3 scripts/ingest_datasets.py --all --reindex"
+        log_warn "Dataset ingestion had errors. Re-run: INDEXER_PASSWORD=admin python3 scripts/ingest_datasets.py --all --reindex"
       fi
     else
       log_warn "ingest_datasets.py not found, skipping dataset ingestion."
@@ -735,9 +742,21 @@ IEOF
     log_info "Skipping dataset ingestion (--no-ingest)"
   fi
 
-  # Load CTFd challenges
+  # Load CTFd challenges — requires initial setup first
   if [[ "${NO_CTFD}" == "false" ]]; then
-    if [[ -f "${SCRIPT_DIR}/generate_flags.py" ]]; then
+    # Check if CTFd still needs initial setup (redirects to /setup)
+    local ctfd_location
+    ctfd_location=$(curl -sk --max-time 10 -o /dev/null -w "%{redirect_url}" "http://localhost:8000/" 2>/dev/null || echo "")
+    if echo "${ctfd_location}" | grep -q "/setup"; then
+      log_warn "CTFd requires initial setup before challenges can be loaded."
+      log_info ""
+      log_info "  ${BOLD}Complete CTFd setup:${NC}"
+      log_info "    1. Open ${CYAN}http://localhost:8000${NC} in your browser"
+      log_info "    2. Create an admin account and configure CTFd"
+      log_info "    3. Go to Admin Panel > Settings > Access Tokens > Generate"
+      log_info "    4. Run: ${CYAN}CTFD_ACCESS_TOKEN=<token> python3 scripts/generate_flags.py${NC}"
+      log_info ""
+    elif [[ -f "${SCRIPT_DIR}/generate_flags.py" ]] && [[ -n "${CTFD_ACCESS_TOKEN:-}" ]]; then
       log_info "Loading CTFd challenges..."
       set -a
       # shellcheck disable=SC1090
@@ -745,9 +764,10 @@ IEOF
       set +a
       python3 "${SCRIPT_DIR}/generate_flags.py" \
         && log_ok "CTFd challenges loaded." \
-        || log_warn "CTFd challenge loading had errors. You can re-run: python3 scripts/generate_flags.py"
+        || log_warn "CTFd challenge loading had errors. Re-run: CTFD_ACCESS_TOKEN=<token> python3 scripts/generate_flags.py"
     else
-      log_warn "generate_flags.py not found, skipping CTFd setup."
+      log_warn "CTFd challenges not loaded (no CTFD_ACCESS_TOKEN set)."
+      log_info "After CTFd setup, run: ${CYAN}CTFD_ACCESS_TOKEN=<token> python3 scripts/generate_flags.py${NC}"
     fi
   else
     log_info "Skipping CTFd challenge loading (--no-ctfd)"
@@ -770,7 +790,8 @@ print_summary() {
   echo -e "    Nginx Proxy ........ ${CYAN}https://localhost:8443${NC}  (HTTP: ${CYAN}http://localhost:8880${NC})"
   echo ""
   echo -e "  ${BOLD}Credentials:${NC}"
-  echo -e "    All passwords are stored in: ${CYAN}${ENV_FILE}${NC}"
+  echo -e "    Wazuh Dashboard .... ${CYAN}admin / admin${NC}"
+  echo -e "    Other passwords .... ${CYAN}${ENV_FILE}${NC}"
   echo -e "    Participant account:  ${CYAN}analyst / (see PARTICIPANT_PASSWORD in .env)${NC}"
   echo ""
   echo -e "  ${BOLD}Useful Commands:${NC}"
