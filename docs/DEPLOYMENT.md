@@ -349,6 +349,32 @@ docker system prune -a
 curl -sk -u "admin:<INDEXER_PASSWORD>" -XDELETE https://localhost:9200/wazuhbots-*
 ```
 
+### Setup script interrupted
+
+**Symptom:** The `setup.sh` script was interrupted or failed at some point during execution.
+
+**Fix:** Simply re-run the setup script. It is designed to be idempotent and will pick up where it left off:
+```bash
+bash scripts/setup.sh
+```
+
+### Loading challenges into CTFd
+
+**Symptom:** The setup script finished but challenges are not loaded in the CTFd platform, or the script is asking for a CTFd API token.
+
+**Fix:** After completing the initial CTFd setup in the browser, you need to generate an API access token:
+
+1. Log in to CTFd as the admin user.
+2. Click on your username and select **Settings** (or **Ajustes** if using Spanish).
+3. Go to the **Access Tokens** tab (or **Fichas de acceso** in Spanish).
+4. Click **Generate** to create a new token and copy it.
+5. Back in the terminal, run:
+   ```bash
+   python3 scripts/generate_flags.py
+   ```
+6. Paste the API token when the script prompts for it.
+7. Wait for the script to finish loading all challenges into the platform.
+
 ### Port conflicts
 
 **Symptom:** `docker compose up` fails because a port is already in use.
