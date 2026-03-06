@@ -15,7 +15,7 @@ WazuhBOTS brings the BOTS (Boss of the SOC) competition format to the Wazuh ecos
 
 With **150 challenges across 4 attack scenarios**, WazuhBOTS surpasses the combined scope of all three Splunk BOTS competitions (BOTSv1 + BOTSv2 + BOTSv3 = ~136 challenges).
 
-Created by **MrHacker (Kevin Munoz)** -- Wazuh Technology Ambassador.
+Created by **MrHacker (Kevin Muñoz)** -- Wazuh Ambassador.
 
 ---
 
@@ -93,7 +93,7 @@ The Wazuh Indexer (OpenSearch) requires `securityadmin.sh` to initialize its sec
 |  [Participants]                                                  |
 |       |                                                          |
 |  +----v-----------+                                              |
-|  |  Nginx Proxy   |  :8880 (HTTP) / :8443 (HTTPS)               |
+|  |  Nginx Proxy   |  :8880 (HTTP) / :8443 (HTTPS)                |
 |  +---+--------+---+                                              |
 |      |        |                                                  |
 |  +---v----+  +v---------+                                        |
@@ -115,7 +115,7 @@ The Wazuh Indexer (OpenSearch) requires `securityadmin.sh` to initialize its sec
 |  +---+----+---+                                                  |
 |      |    |                                                      |
 |  +---v-+ +v------+                                               |
-|  |web- | |lnx-   |  Victim containers with Wazuh agents         |
+|  |web- | |lnx-   |  Victim containers with Wazuh agents          |
 |  |srv  | |srv    |                                               |
 |  +-----+ +-------+                                               |
 +------------------------------------------------------------------+
@@ -323,7 +323,7 @@ Contributions are welcome. See [docs/CREATING_SCENARIOS.md](docs/CREATING_SCENAR
 
 **Creator and Maintainer**
 
-- **MrHacker (Kevin Munoz)** -- Wazuh Technology Ambassador
+- **MrHacker (Kevin Munoz)** -- Wazuh Ambassador
 
 **Powered By**
 
@@ -338,5 +338,5 @@ Contributions are welcome. See [docs/CREATING_SCENARIOS.md](docs/CREATING_SCENAR
 WazuhBOTS is released under the **MIT License**. See [LICENSE](LICENSE) for the full text.
 
 ```
-Copyright (c) 2026 MrHacker (Kevin Munoz)
+Copyright (c) 2026 MrHacker (Kevin Muñoz)
 ```
