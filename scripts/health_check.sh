@@ -41,6 +41,9 @@ fi
 
 # Defaults from .env or fallback
 INDEXER_PASSWORD="${INDEXER_PASSWORD:-admin}"
+# Wazuh indexer 4.14.3 ignores OPENSEARCH_INITIAL_ADMIN_PASSWORD;
+# admin user keeps the default password "admin".
+INDEXER_ADMIN_PASSWORD="admin"
 API_USERNAME="${API_USERNAME:-wazuh-wui}"
 API_PASSWORD="${API_PASSWORD:-ChangeMeAPI123!}"
 
@@ -247,15 +250,24 @@ print(f'{active} active / {total} total')
     fi
 }
 
-## Helper: query indexer from host, fallback to docker exec
+## Detect container engine
+if command -v podman &>/dev/null; then
+    _CONTAINER_CMD="podman"
+elif command -v docker &>/dev/null; then
+    _CONTAINER_CMD="docker"
+else
+    _CONTAINER_CMD="docker"
+fi
+
+## Helper: query indexer from host, fallback to container exec
 indexer_curl() {
     local path="$1"
     local result
-    result=$(curl -sk --max-time 10 -u "admin:${INDEXER_PASSWORD}" \
+    result=$(curl -sk --max-time 10 -u "admin:${INDEXER_ADMIN_PASSWORD}" \
         "https://localhost:9200${path}" 2>/dev/null || echo "")
-    if [[ -z "${result}" ]]; then
-        result=$(docker exec wazuhbots-indexer curl -sk --max-time 10 \
-            -u "admin:${INDEXER_PASSWORD}" \
+    if [[ -z "${result}" ]] || ! echo "${result}" | grep -q '{'; then
+        result=$($_CONTAINER_CMD exec wazuhbots-indexer curl -sk --max-time 10 \
+            -u "admin:${INDEXER_ADMIN_PASSWORD}" \
             "https://localhost:9200${path}" 2>/dev/null || echo "")
     fi
     echo "${result}"
