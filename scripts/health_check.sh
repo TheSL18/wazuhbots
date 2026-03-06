@@ -247,13 +247,31 @@ print(f'{active} active / {total} total')
     fi
 }
 
+## Helper: query indexer from host, fallback to docker exec
+indexer_curl() {
+    local path="$1"
+    local result
+    result=$(curl -sk --max-time 10 -u "admin:${INDEXER_PASSWORD}" \
+        "https://localhost:9200${path}" 2>/dev/null || echo "")
+    if [[ -z "${result}" ]]; then
+        result=$(docker exec wazuhbots-indexer curl -sk --max-time 10 \
+            -u "admin:${INDEXER_PASSWORD}" \
+            "https://localhost:9200${path}" 2>/dev/null || echo "")
+    fi
+    echo "${result}"
+}
+
 check_wazuh_indexer() {
     section "Wazuh Indexer (OpenSearch)"
 
-    # Cluster health
-    local cluster_health
-    cluster_health=$(curl -sk --max-time 10 -u "admin:${INDEXER_PASSWORD}" \
-        "https://localhost:9200/_cluster/health" 2>/dev/null || echo "")
+    # Cluster health (retry up to 3 times — indexer may still be initializing HTTPS)
+    local cluster_health=""
+    local attempt
+    for attempt in 1 2 3; do
+        cluster_health=$(indexer_curl "/_cluster/health")
+        [[ -n "${cluster_health}" ]] && break
+        sleep 2
+    done
 
     if [[ -n "${cluster_health}" ]]; then
         local status
@@ -274,8 +292,7 @@ check_wazuh_indexer() {
 
     # Check for Wazuh alert indices
     local index_count
-    index_count=$(curl -sk --max-time 10 -u "admin:${INDEXER_PASSWORD}" \
-        "https://localhost:9200/_cat/indices/wazuh-alerts*?h=index" 2>/dev/null | wc -l || echo "0")
+    index_count=$(indexer_curl "/_cat/indices/wazuh-alerts*?h=index" | wc -l || echo "0")
     index_count=$(echo "${index_count}" | tr -d ' ')
 
     if [[ "${index_count}" -gt 0 ]]; then
@@ -286,8 +303,7 @@ check_wazuh_indexer() {
 
     # Check for WazuhBOTS dataset indices
     local bots_index_count
-    bots_index_count=$(curl -sk --max-time 10 -u "admin:${INDEXER_PASSWORD}" \
-        "https://localhost:9200/_cat/indices/wazuhbots-*?h=index" 2>/dev/null | wc -l || echo "0")
+    bots_index_count=$(indexer_curl "/_cat/indices/wazuhbots-*?h=index" | wc -l || echo "0")
     bots_index_count=$(echo "${bots_index_count}" | tr -d ' ')
 
     if [[ "${bots_index_count}" -gt 0 ]]; then
@@ -300,7 +316,8 @@ check_wazuh_indexer() {
 check_ctfd() {
     section "CTFd Platform"
 
-    check_endpoint "CTFd web interface" "http://localhost:8000" "200"
+    # CTFd redirects to /setup (first run) or /login (configured) — 302 is expected
+    check_endpoint "CTFd web interface" "http://localhost:8000" "302"
 
     # Check if CTFd API is available
     local api_resp
@@ -317,8 +334,10 @@ check_ctfd() {
 check_nginx() {
     section "Nginx Reverse Proxy"
 
-    check_endpoint "Nginx HTTP" "http://localhost:80" "301"
-    check_endpoint "Nginx HTTPS" "https://localhost:443" "200"
+    check_endpoint "Nginx HTTP" "http://localhost:8880" "302"
+    # HTTPS server block is disabled by default (development mode)
+    # Uncomment the SSL block in nginx.conf and enable this check for production
+    # check_endpoint "Nginx HTTPS" "https://localhost:8443" "200"
 }
 
 # ==============================================================================
