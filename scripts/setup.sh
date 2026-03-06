@@ -654,16 +654,23 @@ post_deploy() {
   local security_tools="/usr/share/wazuh-indexer/plugins/opensearch-security/tools"
   local certs_path="/usr/share/wazuh-indexer/certs"
 
-  # Generate bcrypt hash and apply via securityadmin
-  local admin_hash
+  # Generate bcrypt hashes for admin and kibanaserver (dashboard) users
+  local admin_hash kibana_hash
   admin_hash=$(${CONTAINER_CMD} exec -u root "${indexer_container}" bash -c \
     "export JAVA_HOME=/usr/share/wazuh-indexer/jdk && ${security_tools}/hash.sh -p '${INDEXER_PASSWORD}'" 2>&1 \
     | grep '^\$2y')
+  kibana_hash=$(${CONTAINER_CMD} exec -u root "${indexer_container}" bash -c \
+    "export JAVA_HOME=/usr/share/wazuh-indexer/jdk && ${security_tools}/hash.sh -p '${DASHBOARD_PASSWORD}'" 2>&1 \
+    | grep '^\$2y')
 
-  if [[ -z "${admin_hash}" ]]; then
-    log_warn "Could not generate password hash. Indexer may use default credentials."
+  if [[ -z "${admin_hash}" ]] || [[ -z "${kibana_hash}" ]]; then
+    log_warn "Could not generate password hash(es). Indexer may use default credentials."
+    [[ -z "${admin_hash}" ]] && log_warn "  - admin hash failed"
+    [[ -z "${kibana_hash}" ]] && log_warn "  - kibanaserver hash failed"
   else
-    ${CONTAINER_CMD} exec -u root "${indexer_container}" bash -c "
+    log_info "Applying security configuration via securityadmin..."
+    local securityadmin_output
+    securityadmin_output=$(${CONTAINER_CMD} exec -u root "${indexer_container}" bash -c "
             mkdir -p ${security_tools}/../securityconfig
             cat > ${security_tools}/../securityconfig/internal_users.yml << IEOF
 ---
@@ -677,7 +684,7 @@ admin:
     - admin
   description: Admin user
 kibanaserver:
-  hash: \"${admin_hash}\"
+  hash: \"${kibana_hash}\"
   reserved: true
   description: Kibana server user
 IEOF
@@ -689,8 +696,8 @@ IEOF
                 -cert ${certs_path}/admin.pem \
                 -key ${certs_path}/admin-key.pem \
                 -h localhost
-        " &>/dev/null && log_ok "Indexer admin password configured" \
-      || log_warn "Failed to set indexer password. You may need to run securityadmin manually."
+        " 2>&1) && log_ok "Indexer admin + kibanaserver passwords configured" \
+      || { log_warn "Failed to set indexer passwords. securityadmin output:"; echo "${securityadmin_output}"; }
   fi
 
   # Ingest datasets (attacks + baseline noise)
