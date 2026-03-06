@@ -107,15 +107,17 @@ services:
     environment:
       INDEXER_USERNAME: admin
       INDEXER_PASSWORD: ${INDEXER_PASSWORD}
+      WAZUH_API_URL: https://wazuh-manager
       DASHBOARD_USERNAME: kibanaserver
       DASHBOARD_PASSWORD: kibanaserver
       SERVER_SSL_ENABLED: "true"
+      API_USERNAME: ${API_USERNAME:-wazuh-wui}
+      API_PASSWORD: ${API_PASSWORD:-ChangeMeAPI123!}
     volumes:
       - ./config/wazuh_indexer_ssl_certs/wazuh-dashboard.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard.pem
       - ./config/wazuh_indexer_ssl_certs/wazuh-dashboard-key.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard-key.pem
       - ./config/wazuh_indexer_ssl_certs/root-ca.pem:/usr/share/wazuh-dashboard/certs/root-ca.pem
       - ./config/wazuh_dashboard/opensearch_dashboards.yml:/usr/share/wazuh-dashboard/config/opensearch_dashboards.yml
-      - ./config/wazuh_dashboard/wazuh.yml:/usr/share/wazuh-dashboard/data/wazuh/config/wazuh.yml
       - ./wazuh/dashboards:/tmp/wazuhbots-dashboards:ro
     depends_on:
       wazuh-indexer:
